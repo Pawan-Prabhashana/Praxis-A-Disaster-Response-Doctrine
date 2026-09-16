@@ -57,6 +57,16 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         return self.environment.lower() in {"production", "prod"}
 
+    @property
+    def sync_database_url(self) -> str:
+        """Synchronous SQLAlchemy URL derived from the async one.
+
+        The API uses the async engine (asyncpg); the ETL layer uses a separate
+        SYNC engine (psycopg) because GeoPandas ``to_postgis`` and bulk inserts
+        are simplest against a blocking connection. Both point at the same DB.
+        """
+        return self.database_url.replace("+asyncpg", "+psycopg")
+
 
 @lru_cache
 def get_settings() -> Settings:

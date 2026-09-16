@@ -15,7 +15,9 @@ const en = {
   scenario: {
     label: "Active scenario",
     placeholder: "No scenario loaded",
-    empty: "Scenario management arrives in a later phase.",
+    empty: "No scenarios available yet.",
+    loading: "Loading scenarios…",
+    error: "API offline",
   },
   nav: {
     overview: "Overview",

@@ -14,9 +14,12 @@ export type Theme = "dark" | "light";
 interface UiState {
   theme: Theme;
   sidebarCollapsed: boolean;
+  /** Slug of the active scenario (null until one is selected/loaded). */
+  selectedScenarioSlug: string | null;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
   toggleSidebar: () => void;
+  setSelectedScenario: (slug: string | null) => void;
 }
 
 export const useUiStore = create<UiState>()(
@@ -24,13 +27,19 @@ export const useUiStore = create<UiState>()(
     (set) => ({
       theme: "dark",
       sidebarCollapsed: false,
+      selectedScenarioSlug: null,
       toggleTheme: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
       setTheme: (theme) => set({ theme }),
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+      setSelectedScenario: (slug) => set({ selectedScenarioSlug: slug }),
     }),
     {
       name: "praxis-ui",
-      partialize: (state) => ({ theme: state.theme, sidebarCollapsed: state.sidebarCollapsed }),
+      partialize: (state) => ({
+        theme: state.theme,
+        sidebarCollapsed: state.sidebarCollapsed,
+        selectedScenarioSlug: state.selectedScenarioSlug,
+      }),
     },
   ),
 );

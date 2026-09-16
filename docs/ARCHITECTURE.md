@@ -32,7 +32,7 @@ cycle is legible at a glance. This model is encoded once in
 │  React + Vite (SPA)      │                         │  FastAPI (async)         │
 │  TanStack Query · Zustand│  ◀───────────────────   │  Pydantic v2 · structlog │
 │  Tailwind + shadcn/ui    │        /health          │  request-id middleware   │
-│  MapLibre GL (Phase 2)   │        /api/v1/*        │                          │
+│  MapLibre GL (Phase 3)   │        /api/v1/*        │                          │
 └──────────────────────────┘                         └────────────┬─────────────┘
                                                                    │ SQLAlchemy 2.0 (async)
                                                                    │ + GeoAlchemy2
@@ -43,15 +43,17 @@ cycle is legible at a glance. This model is encoded once in
                                                      └──────────────────────────┘
 ```
 
-- The **frontend** is a single-page app. Server state (health, and later
-  incidents/scenarios) is owned by **TanStack Query**; ephemeral UI state (theme,
-  sidebar) by **Zustand**. This separation keeps caching/refetching concerns out
+- The **frontend** is a single-page app. Server state (health, scenarios) is
+  owned by **TanStack Query**; ephemeral UI state (theme, sidebar, selected
+  scenario) by **Zustand**. This separation keeps caching/refetching concerns out
   of component-local state.
 - The **backend** is an async FastAPI app. `/health` performs a real database
-  probe; `/api/v1/*` is the versioned domain surface. A request-id middleware
-  binds a correlation id onto every structured log line.
-- **PostGIS** is the spatial backbone. Phase 1 only enables the extension; domain
-  tables (with geometry/geography columns) arrive in Phase 2.
+  probe; `/api/v1/*` is the versioned domain surface (scenarios + GeoJSON
+  layers). A request-id middleware binds a correlation id onto every structured
+  log line.
+- **PostGIS** is the spatial backbone. Phase 2 adds the domain model (geometry
+  columns, GIST indexes) and the ingestion CLI. MapLibre rendering of those
+  layers is Phase 3.
 
 ## 3. Stack decisions — and why
 
@@ -75,7 +77,7 @@ cycle is legible at a glance. This model is encoded once in
 - **Framer Motion / lucide-react.** Restrained motion for a calm feel and a
   consistent icon set (both used from Phase 1). **Recharts** (charts for
   Decide/Learn) and **MapLibre GL** (the Sense map) are part of the stack but are
-  introduced when their stages gain data in Phase 2 — they are intentionally not
+  introduced when their stages gain data in Phase 3 — they are intentionally not
   pulled in as unused dependencies now.
 - **i18next.** Localisation scaffolding is in place with English wired now;
   Sinhala (`si`) and Tamil (`ta`) — Sri Lanka's other official languages — slot in
@@ -92,8 +94,8 @@ cycle is legible at a glance. This model is encoded once in
 - **SQLAlchemy 2.0 (async) + GeoAlchemy2.** The 2.0 typed ORM with async engines
   (via `asyncpg`); GeoAlchemy2 adds PostGIS geometry types for the spatial domain.
 - **Alembic (async).** Schema migrations run against the same async engine and
-  metadata the app uses, so there is one source of truth. The initial migration
-  enables PostGIS and creates no domain tables yet.
+  metadata the app uses, so there is one source of truth. Migration 0001 enables
+  PostGIS; 0002 creates the domain tables, geometry columns, and GIST indexes.
 - **pydantic-settings.** Environment-driven config with typed defaults; a fresh
   clone boots without manual setup.
 - **structlog.** Structured (JSON in production) logs with a per-request id for
@@ -117,32 +119,80 @@ cycle is legible at a glance. This model is encoded once in
 - Accessibility and contrast are treated as first-class: the theme targets WCAG AA
   because operators use this under stress, often on imperfect displays.
 
-## 5. Planned public data sources (Phase 2+)
+## 5. Public data sources (Phase 2)
 
-Praxis is designed to integrate authoritative, mostly-open data. These are noted
-now so the schema and ingestion design can anticipate them; **no ingestion is
-implemented in Phase 1.**
+Praxis ingests authoritative, mostly-open data behind a normalised internal
+model. **Every layer has a `data_source` row**; synthetic placeholders are
+flagged `is_synthetic = true` and are never presented as authentic.
 
-| Source                          | Role in Praxis                                                        |
-| ------------------------------- | -------------------------------------------------------------------- |
-| **Open-Meteo**                  | Weather + precipitation forecasts driving hazard context (Sense).    |
-| **GloFAS** (Global Flood Awareness System) | Riverine flood forecasting and reanalysis.                |
-| **HDX** (Humanitarian Data Exchange) | Administrative boundaries and population baselines for Sri Lanka. |
-| **OpenStreetMap**               | Roads, facilities, and basemap features (also MapLibre tiles).       |
-| **NBRO** (National Building Research Organisation) | Landslide hazard zonation for Sri Lanka.          |
-| **DesInventar**                 | Historical disaster loss database for baselines and Learn.           |
-| **UNOSAT**                      | Satellite-derived flood/damage extents during events.                |
-| **GDACS** (Global Disaster Alert and Coordination System) | Global multi-hazard alerts and impact estimates. |
-| **DMC** (Disaster Management Centre, Sri Lanka) | Authoritative national incident, shelter, and situation reports. |
+The live ledger is `just data-report`. The human-readable catalogue — URLs,
+licences, the 2017 vs 2024 seed-event decision, and NBRO/DMC access caveats —
+is [`docs/DATA_SOURCES.md`](DATA_SOURCES.md).
 
-Each source will be adapted behind a normalised internal model so the loop is
-agnostic to any single provider's availability or format.
+## 6. Domain data model
 
-## 6. Phase roadmap (abridged)
+All geometries are EPSG:4326. Every geometry column has a GIST index. Enums are
+stored as checked VARCHAR values (`flood`, `historical`, `flood_extent`, …)
+rather than native PostgreSQL enum types, so SQLite unit tests and migrations
+stay simple.
 
-- **Phase 1 (this repo).** Foundation: shell, design system, API skeleton, DB +
-  migrations, local dev environment.
-- **Phase 2.** Domain models + spatial schema; Sense dashboard and MapLibre layers;
-  first data-source integrations.
+```mermaid
+erDiagram
+    DATA_SOURCE ||--o{ ADMIN_REGION : sources
+    DATA_SOURCE ||--o{ SCENARIO : sources
+    DATA_SOURCE ||--o{ HAZARD_LAYER : sources
+    DATA_SOURCE ||--o{ INCIDENT : sources
+    DATA_SOURCE ||--o{ SHELTER : sources
+    DATA_SOURCE ||--o{ ROAD_SEGMENT : sources
+    DATA_SOURCE ||--o{ ROAD_CLOSURE : sources
+    DATA_SOURCE ||--o{ RIVER_POINT : sources
+    DATA_SOURCE ||--o{ DISCHARGE_FORECAST : sources
+    DATA_SOURCE ||--o{ WEATHER_READING : sources
+
+    ADMIN_REGION ||--o{ ADMIN_REGION : parent_pcode
+    ADMIN_REGION ||--o{ INCIDENT : locates
+    ADMIN_REGION ||--o{ SHELTER : locates
+    ADMIN_REGION ||--o{ WEATHER_READING : locates
+
+    SCENARIO ||--o{ HAZARD_LAYER : contains
+    SCENARIO ||--o{ INCIDENT : contains
+    SCENARIO ||--o{ ROAD_CLOSURE : scopes
+    SCENARIO ||--o{ DISCHARGE_FORECAST : scopes
+
+    ROAD_SEGMENT ||--o{ ROAD_CLOSURE : closed_as
+    RIVER_POINT ||--o{ DISCHARGE_FORECAST : forecasts
+```
+
+- `admin_region` — COD-AB hierarchy (0 country → 4 GN), unique `pcode`.
+- `scenario` — one real historical event in the demo (`2017-sw-monsoon-kalu-ganga`).
+- `hazard_layer` — flood extent (scenario-scoped) or landslide zonation (standalone).
+- `shelter` — OSM **candidate** facilities, not an official registry.
+- `road_closure` — scenario-scoped; demo rows are inferred and flagged synthetic.
+- `discharge_forecast` — GloFAS ensemble stats in m³/s (Phase 5 uncertainty backbone).
+
+## 7. ETL engine split
+
+The API keeps the **async** SQLAlchemy engine (`postgresql+asyncpg://…`) so
+request handlers stay non-blocking.
+
+Ingestion (`uv run python -m app.cli …`) uses a **separate sync** engine
+(`postgresql+psycopg://…`, see `app/db/sync_session.py` and
+`Settings.sync_database_url`). GeoPandas `to_postgis`, shapefile IO, and bulk
+deletes/inserts are simpler and faster on a blocking connection, and the CLI
+runs outside the API event loop. Both engines are derived from the single
+`PRAXIS_DATABASE_URL` — there is still one source of truth for credentials.
+
+Pipelines are idempotent: each layer is owned by its `data_source`; a reload
+deletes that source's rows and re-inserts. Raw files cache under
+`backend/data/raw/` (git-ignored).
+
+## 8. Phase roadmap (abridged)
+
+- **Phase 1.** Foundation: shell, design system, API skeleton, DB + PostGIS
+  extension, local dev environment.
+- **Phase 2 (this work).** Domain models + spatial schema; repeatable ingestion
+  of real public data; one seeded historical event; GeoJSON read APIs; scenario
+  selector wired to the API. Map rendering is deliberately deferred.
+- **Phase 3.** Sense dashboard and MapLibre layers on top of the Phase 2 APIs.
 - **Later.** Playbook Studio (Decide), operational brief export (Act), after-action
   review (Learn), and full Sinhala/Tamil localisation (Phase 8).

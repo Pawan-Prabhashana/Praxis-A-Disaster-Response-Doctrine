@@ -33,6 +33,10 @@ coverage/
 .cache/
 *.tsbuildinfo
 
+# --- Geospatial / ETL cache (do not commit downloaded geodata) --------------
+backend/data/raw/
+backend/data/cache/
+
 # --- OS / editor ------------------------------------------------------------
 .DS_Store
 Thumbs.db

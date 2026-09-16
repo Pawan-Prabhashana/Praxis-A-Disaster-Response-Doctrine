@@ -16,6 +16,16 @@ vi.mock("@/lib/api", () => ({
       environment: "test",
     }),
     meta: vi.fn(),
+    scenarios: vi.fn().mockResolvedValue([
+      {
+        id: 1,
+        slug: "2017-sw-monsoon-kalu-ganga",
+        name: "2017 South-West Monsoon Floods — Kalu Ganga Basin",
+        hazard_type: "flood",
+        status: "historical",
+        event_date: "2017-05-26",
+      },
+    ]),
   },
   ApiError: class ApiError extends Error {},
 }));
@@ -23,7 +33,10 @@ vi.mock("@/lib/api", () => ({
 function renderShell() {
   return render(
     <AppProviders>
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter
+        initialEntries={["/"]}
+        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+      >
         <Routes>
           <Route path="/" element={<AppShell />}>
             <Route index element={<div data-testid="workspace" />} />
@@ -48,5 +61,11 @@ describe("AppShell", () => {
 
     expect(screen.getByText("Praxis")).toBeInTheDocument();
     expect(screen.getByTestId("workspace")).toBeInTheDocument();
+  });
+
+  it("lists the seeded scenario in the top-bar selector", async () => {
+    renderShell();
+
+    expect(await screen.findByText(/2017 South-West Monsoon Floods/i)).toBeInTheDocument();
   });
 });

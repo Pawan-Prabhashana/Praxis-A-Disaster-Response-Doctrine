@@ -29,6 +29,19 @@ export interface MetaResponse {
   scenarios: ScenarioSummary[];
 }
 
+export type HazardType = "flood" | "landslide" | "cyclone" | "multi";
+export type ScenarioStatus = "historical" | "simulated" | "live";
+
+/** A scenario as returned by GET /api/v1/scenarios. */
+export interface Scenario {
+  id: number;
+  slug: string;
+  name: string;
+  hazard_type: HazardType;
+  status: ScenarioStatus;
+  event_date: string | null;
+}
+
 /** Error raised for non-2xx responses or transport/timeout failures. */
 export class ApiError extends Error {
   readonly status: number;
@@ -71,4 +84,5 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   health: (): Promise<HealthResponse> => request<HealthResponse>("/health"),
   meta: (): Promise<MetaResponse> => request<MetaResponse>("/api/v1/meta"),
+  scenarios: (): Promise<Scenario[]> => request<Scenario[]>("/api/v1/scenarios"),
 } as const;

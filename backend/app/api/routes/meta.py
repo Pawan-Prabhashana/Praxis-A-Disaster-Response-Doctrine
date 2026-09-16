@@ -12,10 +12,11 @@ router = APIRouter(tags=["system"])
 
 @router.get("/meta", response_model=MetaResponse, summary="Application metadata")
 async def meta() -> MetaResponse:
-    """Return app identity and the (currently empty) scenario catalogue.
+    """Return app identity.
 
-    Scenarios are seeded in Phase 2; the empty list keeps the frontend
-    scenario-selector contract stable in the meantime.
+    The scenario catalogue lives at ``GET /api/v1/scenarios`` (Phase 2). The
+    ``scenarios`` field here stays empty so the original meta contract is
+    unchanged.
     """
     settings = get_settings()
     return MetaResponse(

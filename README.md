@@ -8,10 +8,10 @@ It turns fragmented operational signals into deliberate action through a single,
 continuous loop, and is built to feel like a calm, trustworthy command center
 because it is used under stress.
 
-> **Phase 1 — Foundation.** This repository currently contains the platform
-> foundation: the application shell, the design system, the API skeleton, and
-> the local development environment. Each stage below renders a designed
-> placeholder; the operational features arrive in later phases.
+> **Phase 2 — Data & geospatial core.** The platform now has a PostGIS domain
+> model, repeatable ingestion of real public data, one seeded historical event
+> (2017 SW-monsoon floods, Kalu Ganga basin), and GeoJSON read APIs. The Sense
+> map arrives in Phase 3; stage routes still render designed placeholders.
 
 ## The response loop
 
@@ -48,7 +48,7 @@ Praxis is organised around four stages that form a closed doctrine loop:
 | **Tooling**  | `just` command runner, `uv` for Python, Docker Compose for infra                                          |
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the rationale behind each
-choice and the planned public data sources.
+choice, and [`docs/DATA_SOURCES.md`](docs/DATA_SOURCES.md) for the data ledger.
 
 ## Prerequisites
 
@@ -66,9 +66,10 @@ cp .env.example .env
 # 2. Install backend + frontend dependencies.
 just setup
 
-# 3. Start the database and apply migrations (enables PostGIS).
+# 3. Start the database, apply migrations, load the seed scenario.
 just db-up
 just migrate
+just data-load
 
 # 4. Run the API and web app together.
 just dev
@@ -96,10 +97,13 @@ when the API and database are both up it reads **API Online**.
 | `just db-up`       | Start Postgres/PostGIS and wait until healthy       |
 | `just db-down`     | Stop the database (data preserved)                  |
 | `just migrate`     | Apply Alembic migrations                            |
+| `just data-load`   | Ingest public data and seed the 2017 Kalu Ganga scenario |
+| `just data-report` | Row counts per table with source + real/synthetic   |
 | `just api`         | Run the FastAPI backend (reload)                    |
 | `just web`         | Run the Vite dev server                             |
 | `just dev`         | Run API + web together                              |
-| `just test`        | Run backend (Pytest) + frontend (Vitest) tests      |
+| `just test`        | Fast unit tests (Pytest + Vitest; no Docker)        |
+| `just test-integration` | PostGIS integration tests (needs `db-up` + `migrate` + `data-load`) |
 | `just lint`        | Ruff + Biome + `tsc` strict typecheck               |
 | `just format`      | Auto-format with Ruff + Biome                       |
 | `just build`       | Production frontend build                           |

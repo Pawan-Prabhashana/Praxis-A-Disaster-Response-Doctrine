@@ -21,10 +21,23 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# ETL / geospatial ingestion stack. Kept separate from the core API runtime so
+# the API image need not carry GDAL/GEOS; installed for the CLI (`just data-load`).
+# The ETL layer uses a SEPARATE SYNC engine (psycopg) — see app/db/sync_session.py.
+etl = [
+    "geopandas>=1.0,<2",
+    "shapely>=2.0,<3",
+    "pyproj>=3.6,<4",
+    "pyogrio>=0.10,<1",
+    "typer>=0.15,<0.16",
+    "tenacity>=9.0,<10",
+    "psycopg[binary]>=3.2,<4",
+]
 dev = [
     "pytest>=8.3,<9",
     "pytest-asyncio>=0.24,<0.25",
     "aiosqlite>=0.20,<0.21",
+    "respx>=0.21,<0.22",
     "ruff>=0.7,<0.8",
 ]
 
@@ -63,7 +76,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "migrations/*" = ["N999", "E501"]
-"tests/*" = ["S101"]
+"tests/*" = ["S101", "E402"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
@@ -77,4 +90,8 @@ quote-style = "double"
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-addopts = "-ra -q"
+# Exclude integration tests by default; run them explicitly via `just test-integration`.
+addopts = "-ra -q -m 'not integration'"
+markers = [
+    "integration: tests that require the live Docker PostGIS database (deselected by default)",
+]
