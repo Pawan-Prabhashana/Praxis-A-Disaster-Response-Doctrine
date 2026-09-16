@@ -1,0 +1,161 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   Praxis design tokens — "operational calm"
+   --------------------------------------------------------------------------
+   A near-black, deep-slate command surface with layered panels, one confident
+   amber signal accent, and distinct operational status colors. Colors are HSL
+   channel triplets ("H S% L%") so Tailwind's `hsl(var(--token) / <alpha>)`
+   can apply opacity. Dark is the default (:root); the light palette activates
+   under [data-theme="light"]. Contrast pairings target WCAG AA — this is a
+   public-safety tool used under stress.
+   ========================================================================== */
+
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: 213 27% 8%;
+  --foreground: 210 20% 93%;
+
+  --surface: 214 24% 11%;
+  --surface-raised: 214 22% 14%;
+  --surface-foreground: 210 20% 93%;
+
+  --card: 214 24% 11%;
+  --card-foreground: 210 20% 93%;
+
+  --popover: 215 26% 12%;
+  --popover-foreground: 210 20% 96%;
+
+  --muted: 214 18% 18%;
+  --muted-foreground: 214 13% 65%;
+
+  --accent: 214 22% 16%;
+  --accent-foreground: 210 20% 93%;
+
+  /* Amber brand accent — used for primary actions and focus. */
+  --primary: 38 96% 56%;
+  --primary-foreground: 30 45% 8%;
+
+  --border: 214 16% 21%;
+  --input: 214 16% 24%;
+  --ring: 38 96% 56%;
+
+  /* Operational status signals. */
+  --signal-ok: 152 52% 46%;
+  --signal-ok-foreground: 152 60% 9%;
+  --signal-warn: 38 96% 56%;
+  --signal-warn-foreground: 30 45% 8%;
+  --signal-crit: 358 70% 57%;
+  --signal-crit-foreground: 0 0% 100%;
+  --signal-info: 200 84% 56%;
+  --signal-info-foreground: 200 60% 9%;
+
+  --radius: 0.625rem;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --background: 210 30% 96%;
+  --foreground: 214 32% 13%;
+
+  --surface: 0 0% 100%;
+  --surface-raised: 210 33% 99%;
+  --surface-foreground: 214 32% 13%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 214 32% 13%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 214 32% 13%;
+
+  --muted: 210 22% 90%;
+  --muted-foreground: 214 16% 38%;
+
+  --accent: 210 26% 90%;
+  --accent-foreground: 214 32% 16%;
+
+  --primary: 34 92% 44%;
+  --primary-foreground: 40 70% 98%;
+
+  --border: 214 20% 84%;
+  --input: 214 20% 82%;
+  --ring: 34 92% 44%;
+
+  --signal-ok: 152 58% 36%;
+  --signal-ok-foreground: 0 0% 100%;
+  --signal-warn: 34 92% 42%;
+  --signal-warn-foreground: 40 70% 98%;
+  --signal-crit: 358 66% 48%;
+  --signal-crit-foreground: 0 0% 100%;
+  --signal-info: 202 82% 42%;
+  --signal-info-foreground: 0 0% 100%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Tabular figures for data/coordinate readouts. */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "zero", "cv01";
+  }
+
+  /* Consistent, restrained focus ring across interactive elements. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.28);
+  }
+
+  /* Slim, low-glare scrollbars fitting the console aesthetic. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+}
+
+@layer utilities {
+  /* Subtle grid texture for empty operational canvases. */
+  .bg-grid {
+    background-image: linear-gradient(hsl(var(--border) / 0.35) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.35) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: -1px -1px;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}

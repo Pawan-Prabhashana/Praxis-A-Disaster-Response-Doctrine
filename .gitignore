@@ -1,0 +1,43 @@
+# ============================================================================
+# Praxis — ignored files
+# ============================================================================
+
+# --- Environment / secrets --------------------------------------------------
+.env
+.env.*
+!.env.example
+
+# --- Python / backend -------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.log
+
+# --- Node / frontend --------------------------------------------------------
+node_modules/
+dist/
+dist-ssr/
+coverage/
+.vite/
+*.local
+.eslintcache
+
+# --- Build / tooling caches -------------------------------------------------
+.cache/
+*.tsbuildinfo
+
+# --- OS / editor ------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*~

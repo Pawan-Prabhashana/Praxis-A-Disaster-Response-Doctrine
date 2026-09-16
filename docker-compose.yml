@@ -1,0 +1,29 @@
+# Local development infrastructure for Praxis.
+# Brings up PostgreSQL 16 with the PostGIS 3.4 spatial extension, using a named
+# volume so data survives container restarts. Credentials are env-driven with
+# safe local defaults (override via a root .env file — see .env.example).
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: praxis-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-praxis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-praxis}
+      POSTGRES_DB: ${POSTGRES_DB:-praxis}
+    # Host port defaults to 5433 to avoid clashing with a stock Postgres on
+    # 5432; the container still listens on the standard 5432 internally.
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - praxis-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-praxis} -d ${POSTGRES_DB:-praxis}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  praxis-db-data:
+    name: praxis-db-data
