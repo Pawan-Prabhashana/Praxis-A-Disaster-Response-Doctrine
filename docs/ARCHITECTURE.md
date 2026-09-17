@@ -186,13 +186,66 @@ Pipelines are idempotent: each layer is owned by its `data_source`; a reload
 deletes that source's rows and re-inserts. Raw files cache under
 `backend/data/raw/` (git-ignored).
 
-## 8. Phase roadmap (abridged)
+## 8. Sense dashboard — frontend data flow (Phase 3)
+
+The `/sense` dashboard (`src/features/sense/`) renders the Phase 2 GeoJSON APIs
+as an operational map.
+
+```
+useUiStore.selectedScenarioSlug
+        │
+        ▼
+TanStack Query hooks (one per layer, keyed by slug)   ── src/features/sense/hooks.ts
+  useScenarioDetail · useAdminRegions(level) · useHazardLayers
+  useShelters · useIncidents · useRoads · useRivers · useDischarge
+        │  (GeoJSON FeatureCollections, cached; toggling never refetches)
+        ▼
+SenseDashboard  ── assembles MapData, computes KPIs (pure, kpis.ts)
+        │
+        ├── KpiStrip        (scenario vitals; sample figures flagged)
+        ├── LayerPanel      (legend + toggles + provenance; useSenseStore)
+        ├── MapCanvas       (imperative MapLibre; see below)
+        └── ContextPanel    (selected feature; DischargeChart for rivers)
+```
+
+**Map integration.** `MapCanvas` wraps `maplibre-gl` directly through a small
+set of effects rather than a React binding library. Sources and layers are added
+**imperatively** (`addSource`/`addLayer`), and data arrives via `source.setData`
+— so the 5.4k-feature road layer and 3.3k-feature incident layer are single GL
+layers, never thousands of React/DOM nodes. Effects are split by concern
+(create-once; re-add layers on style (re)load via an `epoch` counter; `setData`
+on data change; visibility on toggle; selection halo; fit-bounds) so a layer
+toggle only flips `visibility` and never re-parses GeoJSON.
+
+**Basemap + theme.** Free CARTO vector styles (`dark-matter` / `positron`, no
+token). The map is remounted via a React `key={theme}` on theme change, which
+guarantees the basemap matches the theme without a fragile `setStyle` race. Map
+paint colors are read from the design-system CSS custom properties at runtime
+(`mapColors.ts`) so the map matches the token palette.
+
+**Selection.** A single map click handler queries the clickable layers in
+priority order (river → incident → shelter → admin) so a point feature always
+wins over the admin polygon beneath it; the choice updates `useSenseStore` and a
+selection halo source.
+
+**Honesty.** `is_synthetic` from each feature/source drives dashed/translucent
+paint, "sample" legend tags, and provenance lines — real and sample data are
+never visually interchangeable.
+
+**Performance notes / Phase 8.** Stage routes are lazy-loaded, so MapLibre
+(~800 kB) and Recharts (~410 kB) sit in their own chunks loaded only on `/sense`.
+The dissolved flood-extent payload is ~0.9 MB; admin/roads are server-simplified.
+For Phase 8, consider serving the largest layers as vector tiles (or further
+`ST_SimplifyPreserveTopology` by zoom) and viewport-bounded incident queries.
+
+## 9. Phase roadmap (abridged)
 
 - **Phase 1.** Foundation: shell, design system, API skeleton, DB + PostGIS
   extension, local dev environment.
-- **Phase 2 (this work).** Domain models + spatial schema; repeatable ingestion
-  of real public data; one seeded historical event; GeoJSON read APIs; scenario
-  selector wired to the API. Map rendering is deliberately deferred.
-- **Phase 3.** Sense dashboard and MapLibre layers on top of the Phase 2 APIs.
+- **Phase 2.** Domain models + spatial schema; repeatable ingestion of real
+  public data; one seeded historical event; GeoJSON read APIs; scenario selector.
+- **Phase 3 (this work).** Sense dashboard: MapLibre map, seven toggleable
+  layers, KPI strip, feature detail with the GloFAS ensemble chart, and visible
+  real-vs-sample provenance throughout.
 - **Later.** Playbook Studio (Decide), operational brief export (Act), after-action
   review (Learn), and full Sinhala/Tamil localisation (Phase 8).

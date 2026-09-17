@@ -1,12 +1,13 @@
 import { createBrowserRouter } from "react-router-dom";
 
 import { AppShell } from "@/components/shell/AppShell";
-import ActRoute from "@/routes/Act";
-import DecideRoute from "@/routes/Decide";
 import LandingRoute from "@/routes/Landing";
-import LearnRoute from "@/routes/Learn";
-import SenseRoute from "@/routes/Sense";
 
+/**
+ * Stage routes are lazy-loaded so heavy dependencies (MapLibre, Recharts on
+ * /sense) stay out of the initial bundle and load only when their stage is
+ * visited. The landing route is eager (it is the entry point).
+ */
 export const router = createBrowserRouter(
   [
     {
@@ -14,21 +15,29 @@ export const router = createBrowserRouter(
       element: <AppShell />,
       children: [
         { index: true, element: <LandingRoute /> },
-        { path: "sense", element: <SenseRoute /> },
-        { path: "decide", element: <DecideRoute /> },
-        { path: "act", element: <ActRoute /> },
-        { path: "learn", element: <LearnRoute /> },
+        {
+          path: "sense",
+          lazy: async () => ({ Component: (await import("@/routes/Sense")).default }),
+        },
+        {
+          path: "decide",
+          lazy: async () => ({ Component: (await import("@/routes/Decide")).default }),
+        },
+        {
+          path: "act",
+          lazy: async () => ({ Component: (await import("@/routes/Act")).default }),
+        },
+        {
+          path: "learn",
+          lazy: async () => ({ Component: (await import("@/routes/Learn")).default }),
+        },
       ],
     },
   ],
-  // Opt in early to React Router v7 behaviours (silences the future-flag warnings).
+  // Opt in early to React Router v7 behaviours (silences dev warnings).
   {
     future: {
       v7_relativeSplatPath: true,
-      v7_fetcherPersist: true,
-      v7_normalizeFormMethod: true,
-      v7_partialHydration: true,
-      v7_skipActionErrorRevalidation: true,
     },
   },
 );

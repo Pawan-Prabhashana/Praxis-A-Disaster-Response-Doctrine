@@ -22,6 +22,8 @@ export default defineConfig({
           "react-vendor": ["react", "react-dom", "react-router-dom"],
           "data-vendor": ["@tanstack/react-query", "zustand", "i18next", "react-i18next"],
           "motion-vendor": ["framer-motion"],
+          "map-vendor": ["maplibre-gl"],
+          "chart-vendor": ["recharts"],
         },
       },
     },

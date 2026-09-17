@@ -110,6 +110,29 @@ when the API and database are both up it reads **API Online**.
 
 Run `just` with no arguments to list every recipe.
 
+## Sense — operational dashboard (Phase 3)
+
+The `/sense` route turns the seeded data into a command-center dashboard:
+
+- **Map** (MapLibre GL, free CARTO dark/light basemaps, no API token) fit to the
+  scenario's bounding box, with seven toggleable layers: admin population
+  choropleth, flood extent, landslide susceptibility, roads (with closures),
+  candidate shelters (clustered), historical incidents, and river gauges.
+- **Left panel** — layer legend with real-vs-sample swatches, live feature
+  counts, admin level switch, and a data-provenance popover.
+- **Right panel** — details for the selected feature; clicking a river gauge
+  shows the **GloFAS ensemble discharge** chart (median line + p25–p75 band).
+- **KPI strip** — districts, affected population, historical incidents,
+  candidate shelters + capacity, and road km (with closed km marked sample).
+
+**Honesty by design:** any layer or feature with `is_synthetic = true` (the
+landslide sample, inferred road closures) renders with a dashed/translucent
+treatment and a "sample" tag in the legend, KPIs, and popups, so sample data is
+never mistaken for authoritative data.
+
+Start it with `just dev` and open http://localhost:5173/sense (select the seeded
+scenario in the top bar if it is not already active).
+
 ## Repository layout
 
 ```
