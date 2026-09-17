@@ -238,14 +238,56 @@ The dissolved flood-extent payload is ~0.9 MB; admin/roads are server-simplified
 For Phase 8, consider serving the largest layers as vector tiles (or further
 `ST_SimplifyPreserveTopology` by zoom) and viewport-bounded incident queries.
 
-## 9. Phase roadmap (abridged)
+## 9. Playbook Studio & scoring (Phase 4)
+
+A **playbook** (`migration 0003`, `models/playbook.py`) is a scenario-scoped
+response strategy: a name plus a versioned JSONB `levers` payload (priority
+regions, activated shelters, evacuation threshold, resource posture, access
+policy) and a cached JSONB `score_result`.
+
+**Scoring is layered for testability and the Phase 5 seam:**
+
+```
+levers + scenario
+      │
+      ▼
+gather_scoring_inputs()  ── PostGIS: areal-weighted at-risk population,
+  (services/scoring/gather.py)  shelter capacity + reachability vs. closures
+      │  → ScoringInputs (plain, serializable)          [region facts memoised]
+      ▼
+score(inputs)  ── pure, deterministic, framework-free   (services/scoring/core.py)
+      │  → ScoreResult (sub-metrics + raw numbers + real/synthetic/assumption)
+      ▼
+API: POST …/playbooks(/preview-score|/{id}/score)   ·   GET …/playbook-defaults
+```
+
+- The **core** (`score`) never touches the DB — it takes plain `ScoringInputs`
+  and returns a `ScoreResult`. Unit-tested for exact numbers and flag
+  propagation. **Phase 5** perturbs `ScoringInputs` over a distribution and calls
+  the same core (Monte-Carlo) — no core rewrite.
+- The **input resolver** (`gather`) does the spatial work. Per-scenario region
+  facts are heavy but lever-independent, so they are **memoised** and warmed at
+  startup; live preview scoring is then sub-100 ms.
+- Every metric formula and its provenance/assumption flags are documented in
+  [`SCORING.md`](SCORING.md). Endpoints: CRUD under
+  `/api/v1/scenarios/{slug}/playbooks`, plus `preview-score` (score without
+  saving), `playbook-defaults`, `playbook-context`, and `shelters-in-regions`.
+
+**Frontend** (`features/decide/`): a two-mode studio (Builder / Compare) with a
+playbook list rail; TanStack Query per resource, a debounced live-preview query,
+Zustand for draft levers + comparison selection; a compact MapLibre context map;
+and a Recharts comparison chart. All copy via i18next; synthetic/assumption flags
+rendered on every metric.
+
+## 10. Phase roadmap (abridged)
 
 - **Phase 1.** Foundation: shell, design system, API skeleton, DB + PostGIS
   extension, local dev environment.
 - **Phase 2.** Domain models + spatial schema; repeatable ingestion of real
   public data; one seeded historical event; GeoJSON read APIs; scenario selector.
-- **Phase 3 (this work).** Sense dashboard: MapLibre map, seven toggleable
-  layers, KPI strip, feature detail with the GloFAS ensemble chart, and visible
-  real-vs-sample provenance throughout.
-- **Later.** Playbook Studio (Decide), operational brief export (Act), after-action
-  review (Learn), and full Sinhala/Tamil localisation (Phase 8).
+- **Phase 3.** Sense dashboard: MapLibre map, seven toggleable layers, KPI strip,
+  feature detail with the GloFAS ensemble chart, real-vs-sample provenance.
+- **Phase 4 (this work).** Playbook Studio: lever-based strategy builder,
+  deterministic transparent scoring on real data, and side-by-side comparison.
+- **Later.** Uncertainty stress-testing (Phase 5), operational brief export
+  (Act/Phase 6), after-action review (Learn/Phase 7), Sinhala/Tamil (Phase 8).

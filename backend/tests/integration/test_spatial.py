@@ -18,6 +18,7 @@ from httpx import ASGITransport, AsyncClient
 from shapely.geometry import Point
 from sqlalchemy import text
 
+from app.db.session import engine
 from app.db.sync_session import sync_engine, sync_session
 from app.etl.provenance import upsert_data_source
 from app.main import app
@@ -47,6 +48,9 @@ async def live_client(postgis: None) -> AsyncGenerator[AsyncClient, None]:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
+    # Dispose the shared async engine so pooled connections aren't reused across
+    # per-test event loops (pytest-asyncio uses a fresh loop per test).
+    await engine.dispose()
 
 
 def test_gist_indexes_exist(postgis: None) -> None:

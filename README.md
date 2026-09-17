@@ -133,6 +133,28 @@ never mistaken for authoritative data.
 Start it with `just dev` and open http://localhost:5173/sense (select the seeded
 scenario in the top bar if it is not already active).
 
+## Playbook Studio — strategy builder & comparison (Phase 4)
+
+The `/decide` route lets an authority design and compare response strategies
+("playbooks") for the selected scenario, scored on a transparent, deterministic
+scorecard.
+
+- **Builder** — pick priority regions (with population + at-risk shown), activate
+  shelters within them, set resource posture (teams/boats), evacuation threshold,
+  and road-access handling. A compact context map (flood extent + priority
+  regions + activated shelters) and a **live scorecard** update as you edit.
+- **Compare** — select 2–3 playbooks for a side-by-side scorecard with
+  best-in-row highlighting, a comparative bar chart, and each strategy's
+  **coverage gaps** (at-risk regions it does not prioritise).
+- **Scored on real data, honestly.** Every metric is computed from real ingested
+  data with a documented formula (see [`docs/SCORING.md`](docs/SCORING.md)) and
+  tagged **real / sample / assumption** — synthetic inputs (road closures) and
+  planning assumptions (shelter capacity, resource model) are always visible,
+  never hidden. Scores are deterministic: same levers + scenario → same result.
+
+New playbooks start from **data-driven defaults** (top at-risk districts and the
+shelters within them). Open http://localhost:5173/decide with `just dev` running.
+
 ## Repository layout
 
 ```

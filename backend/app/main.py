@@ -31,8 +31,27 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         version=settings.app_version,
         environment=settings.environment,
     )
+    await _warm_scoring_cache(log)
     yield
     log.info("app.shutdown", app=settings.app_name)
+
+
+async def _warm_scoring_cache(log) -> None:
+    """Best-effort warm of the (heavy, one-time) per-scenario region facts so the
+    first Playbook Studio request is instant. Never blocks startup on failure."""
+    try:
+        from sqlalchemy import text
+
+        from app.db.session import SessionLocal
+        from app.services.scoring.gather import _region_facts
+
+        async with SessionLocal() as session:
+            ids = (await session.execute(text("SELECT id FROM scenario"))).scalars().all()
+            for scenario_id in ids:
+                await _region_facts(session, int(scenario_id))
+        log.info("scoring.cache_warmed", scenarios=len(ids))
+    except Exception as exc:
+        log.warning("scoring.cache_warm_failed", error=str(exc))
 
 
 def create_app() -> FastAPI:

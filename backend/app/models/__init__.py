@@ -11,6 +11,7 @@ from app.models.admin_region import AdminRegion
 from app.models.data_source import DataSource
 from app.models.hazard_layer import HazardLayer
 from app.models.incident import Incident
+from app.models.playbook import Playbook
 from app.models.river import DischargeForecast, RiverPoint
 from app.models.road import RoadClosure, RoadSegment
 from app.models.scenario import Scenario
@@ -24,6 +25,7 @@ __all__ = [
     "DischargeForecast",
     "HazardLayer",
     "Incident",
+    "Playbook",
     "RiverPoint",
     "RoadClosure",
     "RoadSegment",

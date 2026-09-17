@@ -180,7 +180,7 @@ export class ApiError extends Error {
   }
 }
 
-const DEFAULT_TIMEOUT_MS = 8000;
+const DEFAULT_TIMEOUT_MS = 20000;
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const controller = new AbortController();
@@ -206,6 +206,101 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+// --- Playbooks (Phase 4) ----------------------------------------------------
+export type Provenance = "real" | "synthetic" | "assumption";
+export type AllocationStrategy = "proportional_to_need" | "even";
+
+export interface EvacuationPolicy {
+  at_risk_threshold: number;
+}
+export interface ResourcePosture {
+  response_teams: number;
+  boats: number;
+  allocation: AllocationStrategy;
+}
+export interface AccessPolicy {
+  avoid_closed_roads: boolean;
+}
+export interface LeverSet {
+  version: number;
+  priority_region_pcodes: string[];
+  activated_shelter_ids: number[];
+  evacuation: EvacuationPolicy;
+  resources: ResourcePosture;
+  access: AccessPolicy;
+}
+
+export interface SubMetric {
+  key: string;
+  score: number;
+  weight: number;
+  provenance: Provenance;
+  raw: Record<string, number | string>;
+  notes: string[];
+}
+export interface CoverageGap {
+  pcode: string;
+  name: string;
+  at_risk_population: number;
+}
+export interface ScoreResult {
+  version: number;
+  overall: number;
+  metrics: SubMetric[];
+  coverage_gaps: CoverageGap[];
+  totals: Record<string, number>;
+  uses_synthetic_data: boolean;
+  assumptions_used: string[];
+}
+
+export interface Playbook {
+  id: number;
+  scenario_slug: string;
+  name: string;
+  description: string | null;
+  levers: LeverSet;
+  score_result: ScoreResult | null;
+  created_at: string;
+  updated_at: string;
+}
+export interface PlaybookCreate {
+  name: string;
+  description?: string | null;
+  levers: LeverSet;
+}
+export interface PlaybookUpdate {
+  name?: string;
+  description?: string | null;
+  levers?: LeverSet;
+}
+export interface RegionContext {
+  pcode: string;
+  name: string;
+  population: number;
+  at_risk_population: number;
+  is_access_impaired: boolean;
+}
+export interface SheltersInRegions {
+  ids: number[];
+  total: number;
+}
+
+function jsonInit(method: string, body: unknown): RequestInit {
+  return {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  };
+}
+
+async function requestVoid(path: string, init?: RequestInit): Promise<void> {
+  const response = await fetch(`${env.apiBaseUrl}${path}`, {
+    ...init,
+    headers: { Accept: "application/json", ...init?.headers },
+  });
+  if (!response.ok) throw new ApiError(`Request to ${path} failed`, response.status);
 }
 
 function scenarioPath(slug: string, suffix = ""): string {
@@ -236,4 +331,29 @@ export const api = {
     request<DischargeResponse>(
       scenarioPath(slug, `/discharge${riverPointId ? `?river_point_id=${riverPointId}` : ""}`),
     ),
+
+  // --- Playbooks ---
+  playbookDefaults: (slug: string): Promise<LeverSet> =>
+    request<LeverSet>(scenarioPath(slug, "/playbook-defaults")),
+  playbookContext: (slug: string): Promise<RegionContext[]> =>
+    request<RegionContext[]>(scenarioPath(slug, "/playbook-context")),
+  sheltersInRegions: (slug: string, pcodes: string[], limit = 500): Promise<SheltersInRegions> =>
+    request<SheltersInRegions>(
+      scenarioPath(
+        slug,
+        `/shelters-in-regions?pcodes=${encodeURIComponent(pcodes.join(","))}&limit=${limit}`,
+      ),
+    ),
+  previewScore: (slug: string, levers: LeverSet): Promise<ScoreResult> =>
+    request<ScoreResult>(scenarioPath(slug, "/playbooks/preview-score"), jsonInit("POST", levers)),
+  listPlaybooks: (slug: string): Promise<Playbook[]> =>
+    request<Playbook[]>(scenarioPath(slug, "/playbooks")),
+  getPlaybook: (slug: string, id: number): Promise<Playbook> =>
+    request<Playbook>(scenarioPath(slug, `/playbooks/${id}`)),
+  createPlaybook: (slug: string, body: PlaybookCreate): Promise<Playbook> =>
+    request<Playbook>(scenarioPath(slug, "/playbooks"), jsonInit("POST", body)),
+  updatePlaybook: (slug: string, id: number, body: PlaybookUpdate): Promise<Playbook> =>
+    request<Playbook>(scenarioPath(slug, `/playbooks/${id}`), jsonInit("PUT", body)),
+  deletePlaybook: (slug: string, id: number): Promise<void> =>
+    requestVoid(scenarioPath(slug, `/playbooks/${id}`), { method: "DELETE" }),
 } as const;
