@@ -204,6 +204,45 @@ const en = {
     compareHint: "Select 2–3 playbooks from the list to compare them side by side.",
     metricCol: "Metric",
     noGaps: "No coverage gaps.",
+    paramClass: {
+      real_uncertainty: "real uncertainty",
+      assumption: "assumption",
+      synthetic_derived: "sample-derived",
+    },
+    stress: {
+      tab: "Stress test",
+      saveFirst: "Save this playbook first to stress-test it.",
+      epistemic:
+        "Modeled (epistemic) uncertainty — Monte Carlo over documented parameter distributions, not measured forecast/observed spread.",
+      epistemicShort: "Modeled parameter uncertainty (epistemic), not forecast spread.",
+      iterationsLabel: "Iterations",
+      targetLabel: "Target",
+      basis: "Basis",
+      run: "Run stress test",
+      error: "Stress test failed. Please try again.",
+      statement:
+        "Under modeled uncertainty this strategy scores {{low}}–{{high}} (90% band); median {{median}}, worst-plausible {{worst}}.",
+      worstPlausible: "Worst-plausible (p05)",
+      median: "Median",
+      point: "Deterministic point",
+      meetsTarget: "Meets {{target}} target",
+      optimistic:
+        "The deterministic score is {{delta}} pts above the median under uncertainty — the point score is optimistic.",
+      pessimistic: "The median under uncertainty is {{delta}} pts above the deterministic score.",
+      runMeta: "{{n}} iterations · seed {{seed}}",
+      iterations: "iterations",
+      score: "Score",
+      tab_results: "Results",
+      underUncertainty: "Under modeled uncertainty",
+      compareHint:
+        "Run a stress test on 2+ of the selected playbooks (in the Builder) to compare them under uncertainty.",
+      reversal:
+        "Robustness reversal — {{robust}} is the most robust choice, but {{point}} wins on the deterministic score.",
+      mostRobust: "most robust",
+      worstShort: "worst",
+      bandLegend:
+        "Bar = p05–p95 band · solid mark = median · hollow mark = deterministic point · line = target.",
+    },
   },
 } as const;
 

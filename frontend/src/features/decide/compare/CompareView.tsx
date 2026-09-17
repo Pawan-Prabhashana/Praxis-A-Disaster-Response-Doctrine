@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { CompareChart } from "@/features/decide/compare/CompareChart";
+import { CompareUncertainty } from "@/features/decide/compare/CompareUncertainty";
 import { bestInRow } from "@/features/decide/compare/logic";
 import { usePlaybooks } from "@/features/decide/hooks";
 import { ProvenanceBadge } from "@/features/decide/scorecard/ProvenanceBadge";
@@ -132,6 +133,9 @@ export function CompareView({ slug }: { slug: string }) {
           })}
         </div>
       </div>
+
+      {/* Comparison under modeled uncertainty (bands + robustness + reversal) */}
+      <CompareUncertainty slug={slug} playbooks={selected} />
 
       {/* Coverage gaps per strategy */}
       <div>

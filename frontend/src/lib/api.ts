@@ -287,6 +287,79 @@ export interface SheltersInRegions {
   total: number;
 }
 
+// --- Stress test / uncertainty (Phase 5) ------------------------------------
+export type ParamClass = "real_uncertainty" | "assumption" | "synthetic_derived";
+export type DistKind = "triangular" | "uniform" | "constant";
+
+export interface Distribution {
+  kind: DistKind;
+  low: number;
+  high: number;
+  mode: number;
+}
+export interface UncertaintyParam {
+  key: string;
+  label: string;
+  param_class: ParamClass;
+  distribution: Distribution;
+  basis: string;
+  enabled: boolean;
+}
+export interface UncertaintyConfig {
+  version: number;
+  target_score: number;
+  params: UncertaintyParam[];
+}
+export interface HistogramBin {
+  start: number;
+  end: number;
+  count: number;
+}
+export interface DistributionSummary {
+  mean: number;
+  median: number;
+  std: number;
+  p05: number;
+  p25: number;
+  p75: number;
+  p95: number;
+  min: number;
+  max: number;
+  histogram: HistogramBin[];
+}
+export interface Robustness {
+  worst_plausible: number;
+  probability_meets_target: number;
+  target_score: number;
+  median: number;
+}
+export interface StressResult {
+  version: number;
+  seed: number;
+  n_iterations: number;
+  point_overall: number;
+  overall: DistributionSummary;
+  metrics: Record<string, DistributionSummary>;
+  robustness: Robustness;
+  config: UncertaintyConfig;
+  uses_synthetic_data: boolean;
+  epistemic_note: string;
+}
+export interface StressRun {
+  id: number;
+  playbook_id: number;
+  scenario_slug: string;
+  n_iterations: number;
+  seed: number;
+  created_at: string;
+  result: StressResult;
+}
+export interface StressTestRequest {
+  config?: UncertaintyConfig;
+  n_iterations: number;
+  seed?: number | null;
+}
+
 function jsonInit(method: string, body: unknown): RequestInit {
   return {
     method,
@@ -356,4 +429,12 @@ export const api = {
     request<Playbook>(scenarioPath(slug, `/playbooks/${id}`), jsonInit("PUT", body)),
   deletePlaybook: (slug: string, id: number): Promise<void> =>
     requestVoid(scenarioPath(slug, `/playbooks/${id}`), { method: "DELETE" }),
+
+  // --- Stress test ---
+  uncertaintyDefaults: (slug: string): Promise<UncertaintyConfig> =>
+    request<UncertaintyConfig>(scenarioPath(slug, "/uncertainty-defaults")),
+  stressTest: (slug: string, id: number, body: StressTestRequest): Promise<StressRun> =>
+    request<StressRun>(scenarioPath(slug, `/playbooks/${id}/stress-test`), jsonInit("POST", body)),
+  listStressRuns: (slug: string, id: number): Promise<StressRun[]> =>
+    request<StressRun[]>(scenarioPath(slug, `/playbooks/${id}/stress-runs`)),
 } as const;

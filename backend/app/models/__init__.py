@@ -16,6 +16,7 @@ from app.models.river import DischargeForecast, RiverPoint
 from app.models.road import RoadClosure, RoadSegment
 from app.models.scenario import Scenario
 from app.models.shelter import Shelter
+from app.models.stress_run import StressRun
 from app.models.weather import WeatherReading
 
 __all__ = [
@@ -31,5 +32,6 @@ __all__ = [
     "RoadSegment",
     "Scenario",
     "Shelter",
+    "StressRun",
     "WeatherReading",
 ]

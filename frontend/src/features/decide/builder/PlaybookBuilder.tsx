@@ -16,7 +16,9 @@ import {
 } from "@/features/decide/hooks";
 import { Scorecard } from "@/features/decide/scorecard/Scorecard";
 import { useDecideStore } from "@/features/decide/store";
+import { StressPanel } from "@/features/decide/stress/StressPanel";
 import type { AllocationStrategy } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { useUiStore } from "@/store/ui";
 
 function NumberField({
@@ -77,6 +79,7 @@ export function PlaybookBuilder({ slug, bbox }: PlaybookBuilderProps) {
   const levers = draft.levers;
   const [autoShelters, setAutoShelters] = useState(true);
   const [shelterCap, setShelterCap] = useState(200);
+  const [bottomTab, setBottomTab] = useState<"live" | "stress">("live");
 
   const sheltersInRegions = useSheltersInRegions(slug, levers.priority_region_pcodes);
 
@@ -242,17 +245,42 @@ export function PlaybookBuilder({ slug, bbox }: PlaybookBuilderProps) {
           />
         </div>
 
-        <div className="max-h-[22rem] shrink-0 overflow-y-auto rounded-lg border border-border bg-surface p-4 lg:max-h-[24rem]">
-          <div className="mb-2 flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-foreground">{t("decide.livePreview")}</h3>
-            {preview.isFetching && <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />}
+        <div className="max-h-[24rem] shrink-0 overflow-y-auto rounded-lg border border-border bg-surface p-4 lg:max-h-[26rem]">
+          <div className="mb-3 flex items-center gap-1 rounded-md border border-border bg-surface-raised p-0.5">
+            {(["live", "stress"] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setBottomTab(tab)}
+                className={cn(
+                  "flex flex-1 items-center justify-center gap-1.5 rounded px-2 py-1 text-xs font-medium transition-colors",
+                  bottomTab === tab
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                )}
+              >
+                {tab === "live" ? t("decide.livePreview") : t("decide.stress.tab")}
+              </button>
+            ))}
           </div>
-          {preview.data ? (
-            <Scorecard result={preview.data} />
-          ) : preview.isError ? (
-            <p className="text-sm text-signal-crit">{t("decide.scoreError")}</p>
+
+          {bottomTab === "live" ? (
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                {preview.isFetching && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                )}
+              </div>
+              {preview.data ? (
+                <Scorecard result={preview.data} />
+              ) : preview.isError ? (
+                <p className="text-sm text-signal-crit">{t("decide.scoreError")}</p>
+              ) : (
+                <Skeleton className="h-64 w-full" />
+              )}
+            </div>
           ) : (
-            <Skeleton className="h-64 w-full" />
+            <StressPanel slug={slug} playbookId={editingId} />
           )}
         </div>
       </div>

@@ -120,18 +120,21 @@ descending. This exposes each strategy's blind spots (its uncovered population i
 also `totals.uncovered_at_risk`). Complementary to population coverage, so it is
 not double-counted.
 
-## Determinism & the Phase 5 seam
+## Determinism & the stress-test engine
 
 `score(ScoringInputs) → ScoreResult` is pure: no randomness, DB, HTTP, or clock.
 Identical inputs → identical output (unit-tested in
 `backend/tests/test_scoring_core.py`).
 
-Phase 5 (uncertainty) will **perturb `ScoringInputs`** — e.g. sample
-`displacement_rate`, `at_risk_population`, or resource effectiveness across a
-principled range — and call the same `score` over the distribution to produce
-confidence bands. No change to the core is required. (The seed event is
-historical, so GloFAS reanalysis has no ensemble spread; uncertainty comes from
-parameter perturbation, not a forecast ensemble.)
+The **stress-test engine** (Phase 5) reuses this core **unchanged**. It perturbs
+`ScoringInputs` — sampling `displacement_rate`, `at_risk_population`, resource
+effectiveness, shelter capacity, and road-closure severity across principled,
+documented ranges — and calls the same `score` over the distribution to produce
+confidence bands and a downside-focused robustness measure. Because the seed event
+is historical (GloFAS reanalysis, no ensemble spread), this is **modeled
+(epistemic)** uncertainty, not forecast/observed spread. See
+[`UNCERTAINTY.md`](UNCERTAINTY.md) for every parameter, its basis and honesty
+class, the robustness definition, and the forecast-ensemble seam.
 
 ## Performance note
 

@@ -6,7 +6,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import { api } from "@/lib/api";
-import type { LeverSet, PlaybookCreate, PlaybookUpdate, ScoreResult } from "@/lib/api";
+import type {
+  LeverSet,
+  PlaybookCreate,
+  PlaybookUpdate,
+  ScoreResult,
+  StressTestRequest,
+} from "@/lib/api";
 
 const STALE = 5 * 60_000;
 
@@ -88,5 +94,33 @@ export function useDeletePlaybook(slug: string) {
   return useMutation({
     mutationFn: (id: number) => api.deletePlaybook(slug, id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["playbooks", slug] }),
+  });
+}
+
+// --- Stress test ---
+export function useUncertaintyDefaults(slug: string | null) {
+  return useQuery({
+    queryKey: ["uncertainty-defaults", slug],
+    queryFn: () => api.uncertaintyDefaults(slug as string),
+    enabled: !!slug,
+    staleTime: STALE,
+  });
+}
+
+export function useStressRuns(slug: string | null, playbookId: number | null) {
+  return useQuery({
+    queryKey: ["stress-runs", slug, playbookId],
+    queryFn: () => api.listStressRuns(slug as string, playbookId as number),
+    enabled: !!slug && playbookId != null,
+    staleTime: STALE,
+  });
+}
+
+export function useStressTest(slug: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, body }: { id: number; body: StressTestRequest }) =>
+      api.stressTest(slug, id, body),
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: ["stress-runs", slug, vars.id] }),
   });
 }

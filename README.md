@@ -8,10 +8,13 @@ It turns fragmented operational signals into deliberate action through a single,
 continuous loop, and is built to feel like a calm, trustworthy command center
 because it is used under stress.
 
-> **Phase 2 — Data & geospatial core.** The platform now has a PostGIS domain
-> model, repeatable ingestion of real public data, one seeded historical event
-> (2017 SW-monsoon floods, Kalu Ganga basin), and GeoJSON read APIs. The Sense
-> map arrives in Phase 3; stage routes still render designed placeholders.
+> **Phase 5 — The stress-test engine.** Playbooks can now be evaluated **under
+> uncertainty**: a seeded Monte Carlo over documented input distributions produces
+> confidence bands, a downside-focused robustness measure, and automatic detection
+> of when the deterministic "winner" is *not* the robust winner. The uncertainty is
+> **modeled (epistemic)** — the seed event is historical, so this is principled
+> parameter perturbation, never fabricated forecast spread. See
+> [`docs/UNCERTAINTY.md`](docs/UNCERTAINTY.md).
 
 ## The response loop
 
@@ -154,6 +157,46 @@ scorecard.
 
 New playbooks start from **data-driven defaults** (top at-risk districts and the
 shelters within them). Open http://localhost:5173/decide with `just dev` running.
+
+## Stress-test engine — playbooks under uncertainty (Phase 5)
+
+The deterministic scorecard answers *"how good is this playbook against the best
+point estimate?"*. The stress-test engine answers *"how good is it across the
+situations we cannot rule out — and does it still hold on a bad day?"*.
+
+- **Explained, editable uncertainty.** A seeded Monte Carlo perturbs five inputs
+  (displacement rate, at-risk population, resource effectiveness, shelter capacity,
+  road-closure severity) over **documented distributions**. Each is shown with its
+  distribution, its plain-language basis, and an **honesty-class badge**
+  (*estimation error* / *assumption* / *sample-derived*), and can be toggled off.
+- **Confidence bands + robustness.** Results show the score distribution
+  (histogram), the **median** and **p05–p95 band**, the **worst-plausible** floor
+  (p05 — "at least this in ~95% of modeled conditions"), and the **probability of
+  meeting a target** (default 60). The deterministic point score is kept separate
+  and drawn alongside for reference.
+- **Compare under uncertainty.** Compare mode ranks strategies by their robustness
+  band, and **flags a reversal** when the point winner is not the robust winner.
+- **Honest by construction.** The seed event is historical (no GloFAS ensemble), so
+  every result is labeled **modeled (epistemic)** uncertainty — parameter
+  perturbation, never presented as measured forecast spread. Runs are **fully
+  reproducible**: the seed is stored with every run.
+
+**Try the built-in reversal demo.** With `just dev` running, at `/decide` create
+two playbooks:
+
+| Playbook | Priority regions | Shelters | Teams / boats |
+| -------- | ---------------- | -------: | ------------- |
+| **Wide coverage** | Colombo, Kalutara, Gampaha, Ratnapura, Galle | ~320 | 260 / 0 |
+| **Focused & resourced** | Colombo, Kalutara | ~320 | 260 / 0 |
+
+Stress-test each (default config, any fixed seed) and open **Compare**. *Wide
+coverage* wins the deterministic scorecard (point ≈ 83 vs ≈ 72) but has a **lower
+worst-plausible floor** (p05 ≈ 62 vs ≈ 65): spreading the same resources across
+more people is fragile when displacement or the at-risk estimate runs high.
+*Focused & resourced* is the **robust winner** — and Compare says so.
+
+Full model, parameter bases, and the robustness definition:
+[`docs/UNCERTAINTY.md`](docs/UNCERTAINTY.md).
 
 ## Repository layout
 

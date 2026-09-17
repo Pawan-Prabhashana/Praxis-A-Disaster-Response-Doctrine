@@ -279,7 +279,63 @@ Zustand for draft levers + comparison selection; a compact MapLibre context map;
 and a Recharts comparison chart. All copy via i18next; synthetic/assumption flags
 rendered on every metric.
 
-## 10. Phase roadmap (abridged)
+## 10. Stress-test engine — uncertainty under Monte Carlo (Phase 5)
+
+The stress-test engine reuses the Phase-4 `score()` core **unchanged** as its inner
+function. It draws N perturbed input samples from documented distributions, scores
+each, and aggregates into confidence bands plus a downside-focused robustness
+measure. It is pure and deterministic given a seed (no DB/HTTP inside the engine),
+so aggregates are unit-testable and `same playbook + config + seed → identical
+result`.
+
+```
+StressTestRequest (config?, n_iterations, seed?)
+      │
+      ▼
+gather_scoring_inputs()  ── one PostGIS resolve (async, memoised region facts)
+      │  → ScoringInputs (base, point estimate)
+      ▼
+run_stress_test(base, config, n_iterations, seed)   (services/scoring/stress.py)
+      │   random.Random(seed)
+      │   for each iteration:
+      │     sample_inputs(base, config, rng)  ── perturb inputs   (uncertainty.py)
+      │       └─▶ score(perturbed)            ── UNCHANGED pure core
+      │   aggregate → mean/median/std/p05..p95, 20-bin histogram, robustness
+      ▼
+StressResult  (summaries + histogram + robustness + config + epistemic flags)
+      ▼
+persist stress_run (config, n_iterations, seed, aggregated result — NOT raw samples)
+      ▼
+API: POST …/playbooks/{id}/stress-test  ·  GET …/stress-runs(/{id})  ·  GET …/uncertainty-defaults
+```
+
+**Execution model.** Monte Carlo is CPU-bound but fast (N=1000 ≈ 55 ms pure). The
+`POST …/stress-test` endpoint resolves inputs asynchronously, then runs the engine
+off the event loop via `anyio.to_thread.run_sync` so the API stays responsive, and
+persists the aggregated result before returning. This synchronous-with-threadpool
+approach is the simplest robust design at this scale; the persisted-run model
+(`stress_run` table, `migration 0004`) is also the **seam for a background-job
+worker** if iteration counts or scenarios grow — the client already reads results
+by run, so moving to a poll-for-completion flow needs no schema change.
+
+**Honesty & the forecast seam.** The seed event is historical, so the engine models
+**epistemic** (parameter) uncertainty, not forecast/observed spread; every result
+carries `uses_synthetic_data` and an `epistemic_note`, and the UI leads with an
+epistemic banner. Swapping the single `sample_inputs` call for a GloFAS-ensemble
+provider would yield real aleatoric forecast members through the identical
+aggregation — an intentional, documented seam, not implemented here.
+
+**Frontend** (`features/decide/stress/`, `compare/CompareUncertainty.tsx`): the
+Builder gains a Live/Stress toggle; the stress panel renders the explained editable
+config (class badges, distributions, bases, toggles, iteration count) and a results
+view (histogram, band, plain-language robustness, epistemic label). Compare mode
+upgrades to compare **under uncertainty** (bands + robustness) and highlights the
+robust-winner-≠-point-winner reversal.
+
+Full parameter model, bases, and the robustness definition:
+[`UNCERTAINTY.md`](UNCERTAINTY.md).
+
+## 11. Phase roadmap (abridged)
 
 - **Phase 1.** Foundation: shell, design system, API skeleton, DB + PostGIS
   extension, local dev environment.
@@ -287,7 +343,10 @@ rendered on every metric.
   public data; one seeded historical event; GeoJSON read APIs; scenario selector.
 - **Phase 3.** Sense dashboard: MapLibre map, seven toggleable layers, KPI strip,
   feature detail with the GloFAS ensemble chart, real-vs-sample provenance.
-- **Phase 4 (this work).** Playbook Studio: lever-based strategy builder,
-  deterministic transparent scoring on real data, and side-by-side comparison.
-- **Later.** Uncertainty stress-testing (Phase 5), operational brief export
-  (Act/Phase 6), after-action review (Learn/Phase 7), Sinhala/Tamil (Phase 8).
+- **Phase 4.** Playbook Studio: lever-based strategy builder, deterministic
+  transparent scoring on real data, and side-by-side comparison.
+- **Phase 5 (this work).** Stress-test engine: seeded Monte Carlo over documented
+  parameter distributions, confidence bands + robustness, compare-under-uncertainty
+  with reversal detection; honest epistemic framing + GloFAS-ensemble seam.
+- **Later.** Operational brief export (Act/Phase 6), after-action review
+  (Learn/Phase 7), Sinhala/Tamil (Phase 8).

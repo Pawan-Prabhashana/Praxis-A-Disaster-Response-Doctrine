@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+import secrets
+from functools import partial
 from typing import Annotated
 
+from anyio import to_thread
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_session
 from app.models.playbook import Playbook
+from app.models.stress_run import StressRun
 from app.schemas.playbook import (
     LeverSet,
     PlaybookCreate,
@@ -18,6 +22,7 @@ from app.schemas.playbook import (
     RegionContext,
     SheltersInRegions,
 )
+from app.schemas.stress import StressRunRead, StressTestRequest
 from app.services.scoring.core import score
 from app.services.scoring.defaults import suggest_default_levers
 from app.services.scoring.gather import (
@@ -26,8 +31,11 @@ from app.services.scoring.gather import (
     shelters_in_regions,
 )
 from app.services.scoring.models import ScoreResult
+from app.services.scoring.stress import StressResult, run_stress_test
+from app.services.scoring.uncertainty import UncertaintyConfig, default_uncertainty_config
 
 _MAX_SHELTER_ACTIVATION = 500
+_MAX_SEED = 2_147_483_647
 
 router = APIRouter(prefix="/scenarios/{slug}", tags=["playbooks"])
 
@@ -199,3 +207,102 @@ async def score_playbook(slug: str, playbook_id: int, session: SessionDep) -> Sc
     pb.score_result = result.model_dump(mode="json")
     await session.commit()
     return result
+
+
+# --- Stress-testing (Phase 5) ----------------------------------------------
+@router.get(
+    "/uncertainty-defaults",
+    response_model=UncertaintyConfig,
+    summary="Default uncertainty config (each param's class + basis)",
+)
+async def uncertainty_defaults(slug: str, session: SessionDep) -> UncertaintyConfig:
+    await _scenario_id(slug, session)
+    return default_uncertainty_config()
+
+
+def _stress_run_read(run: StressRun, slug: str) -> StressRunRead:
+    return StressRunRead(
+        id=run.id,
+        playbook_id=run.playbook_id,
+        scenario_slug=slug,
+        n_iterations=run.n_iterations,
+        seed=run.seed,
+        created_at=run.created_at,
+        result=StressResult.model_validate(run.result),
+    )
+
+
+@router.post(
+    "/playbooks/{playbook_id}/stress-test",
+    response_model=StressRunRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Run a seeded Monte Carlo stress-test (modeled uncertainty)",
+)
+async def stress_test(
+    slug: str, playbook_id: int, payload: StressTestRequest, session: SessionDep
+) -> StressRunRead:
+    scenario_id = await _scenario_id(slug, session)
+    pb = await _get_playbook(session, scenario_id, playbook_id)
+
+    config = payload.config or default_uncertainty_config()
+    seed = payload.seed if payload.seed is not None else secrets.randbelow(_MAX_SEED)
+
+    # Gather (DB) once, then run the CPU-bound Monte Carlo off the event loop so
+    # concurrent requests are never blocked. The inner loop is pure/deterministic.
+    base = await gather_scoring_inputs(
+        session, scenario_id=scenario_id, levers=LeverSet.model_validate(pb.levers)
+    )
+    result = await to_thread.run_sync(
+        partial(run_stress_test, base, config, n_iterations=payload.n_iterations, seed=seed)
+    )
+
+    run = StressRun(
+        scenario_id=scenario_id,
+        playbook_id=pb.id,
+        n_iterations=payload.n_iterations,
+        seed=seed,
+        config=config.model_dump(mode="json"),
+        result=result.model_dump(mode="json"),
+    )
+    session.add(run)
+    await session.commit()
+    await session.refresh(run)
+    return _stress_run_read(run, slug)
+
+
+@router.get(
+    "/playbooks/{playbook_id}/stress-runs",
+    response_model=list[StressRunRead],
+    summary="List a playbook's stress-test runs (newest first)",
+)
+async def list_stress_runs(slug: str, playbook_id: int, session: SessionDep) -> list[StressRunRead]:
+    scenario_id = await _scenario_id(slug, session)
+    await _get_playbook(session, scenario_id, playbook_id)
+    rows = (
+        (
+            await session.execute(
+                select(StressRun)
+                .where(StressRun.playbook_id == playbook_id)
+                .order_by(StressRun.created_at.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return [_stress_run_read(run, slug) for run in rows]
+
+
+@router.get(
+    "/playbooks/{playbook_id}/stress-runs/{run_id}",
+    response_model=StressRunRead,
+    summary="Get one stress-test run",
+)
+async def get_stress_run(
+    slug: str, playbook_id: int, run_id: int, session: SessionDep
+) -> StressRunRead:
+    scenario_id = await _scenario_id(slug, session)
+    await _get_playbook(session, scenario_id, playbook_id)
+    run = await session.get(StressRun, run_id)
+    if run is None or run.playbook_id != playbook_id:
+        raise HTTPException(status_code=404, detail=f"Stress run {run_id} not found")
+    return _stress_run_read(run, slug)

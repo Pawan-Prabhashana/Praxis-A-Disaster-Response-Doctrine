@@ -91,6 +91,7 @@ async def _region_facts(session: AsyncSession, scenario_id: int) -> list[_Region
     _REGION_FACTS_CACHE[scenario_id] = facts
     return facts
 
+
 # Activated shelters with capacity + reachability vs. closed roads.
 # Uses a planar ST_DWithin (degrees) so both GIST indexes apply — far faster than
 # casting every geometry to geography. The buffer is passed in degrees.
@@ -201,12 +202,8 @@ async def shelters_in_regions(
     """Return candidate shelter ids inside the given regions (capped) and the total."""
     if not pcodes:
         return SheltersInRegions(ids=[], total=0)
-    total = int(
-        (await session.execute(_SHELTERS_COUNT_SQL, {"pcodes": pcodes})).scalar_one()
-    )
-    rows = (
-        await session.execute(_SHELTERS_IN_REGIONS_SQL, {"pcodes": pcodes, "lim": limit})
-    ).all()
+    total = int((await session.execute(_SHELTERS_COUNT_SQL, {"pcodes": pcodes})).scalar_one())
+    rows = (await session.execute(_SHELTERS_IN_REGIONS_SQL, {"pcodes": pcodes, "lim": limit})).all()
     return SheltersInRegions(ids=[int(r[0]) for r in rows], total=total)
 
 
