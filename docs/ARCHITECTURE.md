@@ -335,7 +335,63 @@ robust-winner-≠-point-winner reversal.
 Full parameter model, bases, and the robustness definition:
 [`UNCERTAINTY.md`](UNCERTAINTY.md).
 
-## 11. Phase roadmap (abridged)
+## 11. Operational brief pipeline — the Act stage (Phase 6)
+
+The Act stage narrates the computed results into an exportable operational brief.
+Its defining constraint: **the LLM structures and narrates real data; it never
+invents a number.** That guarantee is structural, not aspirational — a typed trust
+boundary plus a post-generation numeric guard.
+
+```
+playbook + scenario + (optional) stress run
+      │  gather_scoring_inputs() · score() · StressResult
+      ▼
+build_brief_facts(...) ──► BriefFacts            [trust boundary: the only "facts"]
+      │                                            (facts.py — pure, typed)
+      ├───────────────────────────► render_template_brief(facts)   [no-LLM path]
+      ▼
+prompt (facts + strict rules) ─► LLM one bounded call ─► JSON sections   (llm.py, prompt.py)
+      ▼
+verify_brief(facts, sections) ─► GuardReport      (guard.py)
+      │   number in prose ∉ facts pool → section repaired from template
+      ▼
+BriefContent (guard-clean) ─► persist brief ─► render HTML / PDF   (render.py, migration 0005)
+      ▼
+API: POST …/playbooks/{id}/brief · GET …/briefs(/{id}) · GET …/briefs/{id}/export.{html,pdf}
+```
+
+**Trust boundary.** `BriefFacts` (facts.py) holds only real computed facts —
+scenario, levers-in-plain-terms, the scorecard (per-metric score/weight/provenance),
+the stress summary, coverage gaps, assumptions and synthetic influences. The
+generator receives nothing else.
+
+**Numeric guard.** `verify_brief` builds a pool of every number appearing in the
+facts payload (numeric fields + numbers inside strings such as dates/notes, plus
+percentile/scale anchors) and checks each number in each generated section against
+it (formatting- and rounding-tolerant). Any section with an unverifiable number is
+replaced by its deterministic template version; outcomes are logged and persisted.
+No unverified figure is emitted.
+
+**No-key fallback.** With `PRAXIS_LLM_ENABLED` false or no key, `generate_brief`
+returns the deterministic template — the same function the guard uses for repair.
+The full test suite runs with no key (a fake completion is injected; no real API is
+ever called).
+
+**LLM client & PDF.** A thin async httpx wrapper on the Anthropic Messages API
+(no heavy SDK; base URL configurable), one bounded call under a tenacity retry +
+timeout. Export is one Jinja2 template rendered to print-ready HTML and to PDF via
+xhtml2pdf (pure-Python, no native libraries — works in CI and locally). Each brief
+persists a **facts snapshot** (migration `0005`, `brief` table) so it stays
+reproducible and auditable even if the underlying data later changes.
+
+**Frontend** (`features/act/`): the `/act` workspace picks a playbook (+ optional
+stress run), generates the brief, renders it as an authoritative document with
+provenance badges, the synthetic-data caution, the epistemic framing, a
+"verified template" marker on any guard-repaired section, and HTML/PDF export.
+
+Full trust model and judge-defense: [`BRIEF.md`](BRIEF.md).
+
+## 12. Phase roadmap (abridged)
 
 - **Phase 1.** Foundation: shell, design system, API skeleton, DB + PostGIS
   extension, local dev environment.
@@ -345,8 +401,10 @@ Full parameter model, bases, and the robustness definition:
   feature detail with the GloFAS ensemble chart, real-vs-sample provenance.
 - **Phase 4.** Playbook Studio: lever-based strategy builder, deterministic
   transparent scoring on real data, and side-by-side comparison.
-- **Phase 5 (this work).** Stress-test engine: seeded Monte Carlo over documented
-  parameter distributions, confidence bands + robustness, compare-under-uncertainty
-  with reversal detection; honest epistemic framing + GloFAS-ensemble seam.
-- **Later.** Operational brief export (Act/Phase 6), after-action review
-  (Learn/Phase 7), Sinhala/Tamil (Phase 8).
+- **Phase 5.** Stress-test engine: seeded Monte Carlo over documented parameter
+  distributions, confidence bands + robustness, compare-under-uncertainty with
+  reversal detection; honest epistemic framing + GloFAS-ensemble seam.
+- **Phase 6 (this work).** Act: AI-*structured* operational brief over a typed
+  facts boundary with a numeric-consistency guard (no fabricated figures), a
+  deterministic no-key fallback, and print-ready HTML/PDF export.
+- **Later.** After-action review (Learn/Phase 7), Sinhala/Tamil (Phase 8).

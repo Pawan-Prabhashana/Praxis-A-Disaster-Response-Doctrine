@@ -18,6 +18,11 @@ dependencies = [
     "alembic>=1.14,<1.15",
     "structlog>=24.4,<25",
     "httpx>=0.27,<0.28",
+    # Phase 6 (Act — operational brief). All pure-Python, no native libraries, so
+    # the API image and CI stay lean and the brief renders anywhere.
+    "tenacity>=9.0,<10",  # bounded retry around the single LLM call
+    "jinja2>=3.1,<4",  # server-side HTML brief template (print-ready)
+    "xhtml2pdf>=0.2.16,<0.3",  # HTML->PDF (reportlab-based); no Cairo/Pango needed
 ]
 
 [project.optional-dependencies]

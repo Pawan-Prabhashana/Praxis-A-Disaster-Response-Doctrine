@@ -8,13 +8,12 @@ It turns fragmented operational signals into deliberate action through a single,
 continuous loop, and is built to feel like a calm, trustworthy command center
 because it is used under stress.
 
-> **Phase 5 — The stress-test engine.** Playbooks can now be evaluated **under
-> uncertainty**: a seeded Monte Carlo over documented input distributions produces
-> confidence bands, a downside-focused robustness measure, and automatic detection
-> of when the deterministic "winner" is *not* the robust winner. The uncertainty is
-> **modeled (epistemic)** — the seed event is historical, so this is principled
-> parameter perturbation, never fabricated forecast spread. See
-> [`docs/UNCERTAINTY.md`](docs/UNCERTAINTY.md).
+> **Phase 6 — Act: the operational brief.** A chosen playbook (and its stress-test
+> result) becomes a structured, exportable **operational brief** for field teams.
+> The narrative is AI-*structured* but every number is computed by Praxis and
+> **validated by a numeric guard** against the source facts — a fabricated figure
+> can never ship. With no LLM key the brief is produced by a deterministic template;
+> HTML and PDF export work either way. See [`docs/BRIEF.md`](docs/BRIEF.md).
 
 ## The response loop
 
@@ -197,6 +196,41 @@ more people is fragile when displacement or the at-risk estimate runs high.
 
 Full model, parameter bases, and the robustness definition:
 [`docs/UNCERTAINTY.md`](docs/UNCERTAINTY.md).
+
+## Operational brief — the Act stage (Phase 6)
+
+The `/act` route turns a saved playbook (and, optionally, a stress-test run) into a
+professional **operational brief**: situation, recommended strategy, expected
+performance (scorecard + robustness), tasking, coverage gaps & risks, and
+assumptions/provenance — ready to hand to field teams.
+
+- **The LLM narrates real data; it never invents it.** Every figure comes from the
+  Phase-4 scorecard and Phase-5 stress result, assembled into a typed facts object
+  that is the *only* thing the model may state as fact. After generation a
+  **numeric-consistency guard** checks every number in the prose against those
+  facts; any section with an unverifiable number is silently replaced by the
+  deterministic template. **A hallucinated figure cannot ship.** (Judge-defense and
+  full trust model: [`docs/BRIEF.md`](docs/BRIEF.md).)
+- **Works with no AI.** With `PRAXIS_LLM_ENABLED=false` or no key, the brief is
+  produced entirely from the deterministic template — the app, tests, and exports
+  all work offline with zero errors. A quiet indicator shows whether narration was
+  AI-structured or template-only.
+- **Honest by construction.** Provenance badges (real / sample / assumption), the
+  synthetic-data caution, and the modeled-(epistemic)-uncertainty framing all
+  survive into the document.
+- **Export.** Print-ready **HTML** and a real downloadable **PDF** (server-rendered;
+  pure-Python, no native deps), each with a provenance/generation footer.
+
+**Enable AI narration locally** (optional) by setting in `.env`:
+
+```bash
+PRAXIS_LLM_ENABLED=true
+PRAXIS_LLM_API_KEY=sk-ant-...      # your Anthropic key; never commit it
+PRAXIS_LLM_MODEL=claude-sonnet-5
+```
+
+Open http://localhost:5173/act with `just dev` running, pick a playbook, and
+**Generate brief**.
 
 ## Repository layout
 

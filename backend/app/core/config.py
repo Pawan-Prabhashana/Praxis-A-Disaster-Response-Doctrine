@@ -38,6 +38,25 @@ class Settings(BaseSettings):
     # (host port 5433 — see docker-compose.yml / .env.example).
     database_url: str = "postgresql+asyncpg://praxis:praxis@localhost:5433/praxis"
 
+    # --- LLM (Phase 6 — operational brief narration) ------------------------
+    # The brief generator narrates REAL computed facts. The LLM is strictly
+    # optional: with it disabled or no key present, the app renders a complete
+    # brief from the deterministic template — every code path works offline and
+    # with no key (tests never call a real API). Configure via PRAXIS_LLM_*.
+    llm_enabled: bool = False
+    llm_api_key: str | None = None
+    llm_model: str = "claude-sonnet-5"
+    # Anthropic Messages API by default; override for a compatible gateway.
+    llm_base_url: str = "https://api.anthropic.com"
+    llm_api_version: str = "2023-06-01"
+    llm_max_tokens: int = 2000
+    llm_timeout_s: float = 30.0
+
+    @property
+    def llm_ready(self) -> bool:
+        """True only when narration is both enabled and has a key to use."""
+        return self.llm_enabled and bool(self.llm_api_key)
+
     # --- CORS ---------------------------------------------------------------
     # Comma-separated list of allowed origins for the browser client.
     # `NoDecode` disables pydantic-settings' automatic JSON decoding so a plain

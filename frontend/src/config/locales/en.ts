@@ -244,6 +244,41 @@ const en = {
         "Bar = p05–p95 band · solid mark = median · hollow mark = deterministic point · line = target.",
     },
   },
+  act: {
+    noScenario: "Select a scenario to prepare an operational brief.",
+    pickPlaybook: "Choose a playbook",
+    noPlaybooks: "No saved playbooks yet — design one in Decide first.",
+    robustnessLabel: "Attach robustness",
+    noStress: "No stress test yet. Run one in Decide to include robustness.",
+    runOption: "seed {{seed}} · {{n}} iters · {{date}}",
+    generate: "Generate brief",
+    regenerate: "Regenerate",
+    generateError: "Brief generation failed. Please try again.",
+    emptyState: "Generate a brief to see it here.",
+    exportHtml: "HTML",
+    exportPdf: "Download PDF",
+    preparedAt: "Prepared {{date}}",
+    validatedNote:
+      "Figures are computed by Praxis from real data and validated against source; narrative is AI-structured.",
+    templateNote:
+      "Figures are computed by Praxis from real data; this brief was generated without AI narration.",
+    syntheticWarn:
+      "This brief includes metrics influenced by synthetic sample data (flagged on the scorecard).",
+    verifiedTemplate: "verified template",
+    metric: "Metric",
+    scoreCol: "Score",
+    weightCol: "Weight",
+    basisCol: "Basis",
+    overall: "Overall",
+    robustnessTitle: "Robustness under modeled uncertainty",
+    robustnessLine:
+      "{{low}}–{{high}} (90% band) · median {{median}} · worst-plausible {{worst}} · meets {{target}} in {{prob}}%",
+    reproFrom: "Reproducible from seed {{seed}} over {{n}} iterations.",
+    generatorLlm: "AI-structured",
+    generatorTemplate: "template",
+    guardRepaired: "{{count}} section(s) verified from template",
+    footerGenerated: "Narrative: {{generator}}",
+  },
 } as const;
 
 export default en;

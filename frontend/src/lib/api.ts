@@ -360,6 +360,148 @@ export interface StressTestRequest {
   seed?: number | null;
 }
 
+// --- Operational brief (Phase 6 — Act) --------------------------------------
+export interface BriefScenarioFacts {
+  slug: string;
+  name: string;
+  hazard_type: string;
+  status: string;
+  event_date: string | null;
+  description: string | null;
+}
+export interface PriorityRegionFact {
+  pcode: string;
+  name: string;
+  population: number;
+  at_risk_population: number;
+  is_access_impaired: boolean;
+}
+export interface StrategyFacts {
+  name: string;
+  description: string | null;
+  priority_regions: PriorityRegionFact[];
+  priority_region_count: number;
+  activated_shelter_count: number;
+  activated_capacity: number;
+  capacity_known: number;
+  capacity_assumed: number;
+  assumed_capacity_shelters: number;
+  response_teams: number;
+  boats: number;
+  team_capacity: number;
+  boat_capacity: number;
+  response_capacity: number;
+  allocation: string;
+  evacuation_threshold: number;
+  avoid_closed_roads: boolean;
+  displacement_rate_pct: number;
+}
+export interface MetricFact {
+  key: string;
+  label: string;
+  score: number;
+  weight_pct: number;
+  provenance: Provenance;
+  raw: Record<string, number | string>;
+  notes: string[];
+}
+export interface ScorecardFacts {
+  overall: number;
+  metrics: MetricFact[];
+  total_at_risk: number;
+  covered_at_risk: number;
+  uncovered_at_risk: number;
+  people_needing_shelter: number;
+  coverage_gap_count: number;
+}
+export interface CoverageGapFact {
+  pcode: string;
+  name: string;
+  at_risk_population: number;
+}
+export interface RobustnessFacts {
+  point_overall: number;
+  median: number;
+  p05: number;
+  p25: number;
+  p75: number;
+  p95: number;
+  worst_plausible: number;
+  probability_meets_target_pct: number;
+  target_score: number;
+  n_iterations: number;
+  seed: number;
+  uses_synthetic_data: boolean;
+  epistemic_note: string;
+  point_is_optimistic: boolean;
+}
+export interface BriefFacts {
+  version: number;
+  scenario: BriefScenarioFacts;
+  strategy: StrategyFacts;
+  scorecard: ScorecardFacts;
+  coverage_gaps: CoverageGapFact[];
+  robustness: RobustnessFacts | null;
+  assumptions: string[];
+  synthetic_influences: string[];
+  uses_synthetic_data: boolean;
+}
+
+export type BriefSectionKey =
+  | "situation"
+  | "strategy"
+  | "performance"
+  | "tasking"
+  | "risks"
+  | "provenance";
+export interface BriefSection {
+  key: BriefSectionKey;
+  title: string;
+  paragraphs: string[];
+  from_template: boolean;
+}
+export interface BriefContent {
+  version: number;
+  headline: string;
+  sections: BriefSection[];
+  generator: "llm" | "template";
+}
+export interface SectionGuard {
+  key: string;
+  ok: boolean;
+  numbers_checked: number;
+  offending: string[];
+}
+export interface GuardReport {
+  ok: boolean;
+  sections: SectionGuard[];
+  repaired_sections: string[];
+}
+export interface Brief {
+  id: number;
+  scenario_slug: string;
+  playbook_id: number;
+  stress_run_id: number | null;
+  generator: "llm" | "template";
+  model: string | null;
+  created_at: string;
+  facts: BriefFacts;
+  content: BriefContent;
+  guard: GuardReport;
+}
+export interface BriefListItem {
+  id: number;
+  playbook_id: number;
+  stress_run_id: number | null;
+  generator: "llm" | "template";
+  model: string | null;
+  headline: string;
+  created_at: string;
+}
+export interface BriefRequest {
+  stress_run_id?: number | null;
+}
+
 function jsonInit(method: string, body: unknown): RequestInit {
   return {
     method,
@@ -437,4 +579,15 @@ export const api = {
     request<StressRun>(scenarioPath(slug, `/playbooks/${id}/stress-test`), jsonInit("POST", body)),
   listStressRuns: (slug: string, id: number): Promise<StressRun[]> =>
     request<StressRun[]>(scenarioPath(slug, `/playbooks/${id}/stress-runs`)),
+
+  // --- Operational brief (Act) ---
+  createBrief: (slug: string, id: number, body: BriefRequest): Promise<Brief> =>
+    request<Brief>(scenarioPath(slug, `/playbooks/${id}/brief`), jsonInit("POST", body)),
+  listBriefs: (slug: string, id: number): Promise<BriefListItem[]> =>
+    request<BriefListItem[]>(scenarioPath(slug, `/playbooks/${id}/briefs`)),
+  getBrief: (slug: string, id: number, briefId: number): Promise<Brief> =>
+    request<Brief>(scenarioPath(slug, `/playbooks/${id}/briefs/${briefId}`)),
+  /** Absolute URL for a server-rendered export (opened/downloaded by the browser). */
+  briefExportUrl: (slug: string, id: number, briefId: number, format: "html" | "pdf"): string =>
+    `${env.apiBaseUrl}${scenarioPath(slug, `/playbooks/${id}/briefs/${briefId}/export.${format}`)}`,
 } as const;
