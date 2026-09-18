@@ -8,12 +8,13 @@ It turns fragmented operational signals into deliberate action through a single,
 continuous loop, and is built to feel like a calm, trustworthy command center
 because it is used under stress.
 
-> **Phase 6 — Act: the operational brief.** A chosen playbook (and its stress-test
-> result) becomes a structured, exportable **operational brief** for field teams.
-> The narrative is AI-*structured* but every number is computed by Praxis and
-> **validated by a numeric guard** against the source facts — a fabricated figure
-> can never ship. With no LLM key the brief is produced by a deterministic template;
-> HTML and PDF export work either way. See [`docs/BRIEF.md`](docs/BRIEF.md).
+> **Phase 7 — Learn: the after-action review.** The Sense → Decide → Act → Learn
+> loop is now complete. `/learn` compares a strategy's **predicted** at-risk ranking
+> against the **actual recorded impact** of the real 2017 event (DesInventar) — an
+> honest *predicted-vs-recorded* benchmark, never a claim the plan was executed. On
+> the seed data the rankings are **inverted** (Spearman ≈ −0.5): Colombo, ranked
+> most at-risk, recorded zero 2017 deaths, while Ratnapura, ranked last, recorded
+> the most — the loop-closing lesson. See [`docs/AFTER_ACTION.md`](docs/AFTER_ACTION.md).
 
 ## The response loop
 
@@ -231,6 +232,37 @@ PRAXIS_LLM_MODEL=claude-sonnet-5
 
 Open http://localhost:5173/act with `just dev` running, pick a playbook, and
 **Generate brief**.
+
+## After-action review — the Learn stage (Phase 7)
+
+`/learn` closes the loop: it compares a strategy's **predicted** performance
+against the **actual recorded impact** of the real historical event.
+
+- **Predicted vs. recorded — honestly framed.** The recorded side is real
+  DesInventar 2017 impact (deaths, people affected, houses destroyed) — the
+  historical response baseline, **not** the outcome of executing the plan. Praxis
+  was not running in 2017; the review says so everywhere.
+- **Composite impact + alignment.** Districts are ranked by a documented composite
+  (normalised deaths 0.5 / houses 0.3 / affected 0.2, raw components shown), and
+  the predicted at-risk ranking is compared to the recorded impact ranking via a
+  **Spearman correlation** and top-3 overlap, in plain language.
+- **Blind spots & lessons.** High-impact districts the strategy under-prioritised
+  or missed, plus structured lessons — every number traceable to real data.
+  Recorded-impact map (choropleth), a predicted-vs-recorded rank scatter, and a
+  "for next time" takeaway.
+- **No fabricated outcomes.** Districts with no recorded data say "no recorded
+  data." Lessons work with no LLM key (template); the optional narrated assessment
+  passes the same numeric guard as the brief.
+
+**The loop-closing insight (real seed data).** On the 2017 event the predicted and
+recorded rankings are **inverted** (Spearman ≈ −0.5): Praxis ranks **Colombo** most
+at-risk (largest flood-∩-population), yet Colombo recorded **0 deaths** in 2017,
+while **Ratnapura** — ranked *last* at-risk — recorded the **most deaths (84)** as a
+landslide-prone hill district. Lesson: weight recorded-impact history and landslide
+susceptibility, not flood-inundation exposure alone.
+
+Open http://localhost:5173/learn, pick a playbook, and **Run after-action**. Full
+model: [`docs/AFTER_ACTION.md`](docs/AFTER_ACTION.md).
 
 ## Repository layout
 

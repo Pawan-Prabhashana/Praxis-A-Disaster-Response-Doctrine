@@ -279,6 +279,52 @@ const en = {
     guardRepaired: "{{count}} section(s) verified from template",
     footerGenerated: "Narrative: {{generator}}",
   },
+  learn: {
+    noScenario: "Select a scenario to run an after-action review.",
+    pickPlaybook: "Choose a playbook",
+    noPlaybooks: "No saved playbooks yet — design one in Decide first.",
+    generate: "Run after-action",
+    regenerate: "Re-run after-action",
+    generateError: "After-action failed. Please try again.",
+    emptyState: "Run an after-action review to compare predicted vs. recorded impact.",
+    framing:
+      "Predicted vs. recorded: the strategy's Praxis at-risk ranking compared against the actual recorded {{year}} impact (DesInventar historical baseline) — not the outcome of executing the plan.",
+    alignmentTitle: "Prediction alignment",
+    alignmentSummary:
+      "The strategy's at-risk ranking correlates with recorded impact at Spearman {{rho}}; {{overlap}} of the top {{k}} hardest-hit districts (of {{n}} with recorded data) were in its predicted top {{k}}.",
+    alignLabel: {
+      strong: "strong",
+      moderate: "moderate",
+      weak: "weak",
+      inverted: "inverted",
+    },
+    assessment: "Assessment",
+    aiNarrated: "AI-structured",
+    template: "template",
+    rankTitle: "Predicted rank vs. recorded impact rank",
+    rankHint:
+      "Each district: predicted at-risk rank vs. recorded impact rank. On the dashed line = aligned; far off it = a miss. Red = under-prioritised (recorded worse than predicted).",
+    predictedRankAxis: "Predicted at-risk rank",
+    recordedRankAxis: "Recorded impact rank",
+    mapCaption: "Districts shaded by actual recorded impact (real); priority districts outlined.",
+    recordedTitle: "Actual recorded {{year}} impact — historical response baseline",
+    realBadge: "real data",
+    colDistrict: "District",
+    colPredRank: "At-risk rank",
+    colDeaths: "Deaths",
+    colAffected: "Affected",
+    colHouses: "Houses destroyed",
+    colImpact: "Impact",
+    colImpactRank: "Impact rank",
+    noData: "no recorded data",
+    underTag: "under-prioritised",
+    notPriorityTag: "not prioritised",
+    blindSpots: "Blind spots — recorded impact, not prioritised",
+    blindSpotDetail: "{{deaths}} deaths, {{affected}} affected — outside the priority set.",
+    lessons: "Lessons",
+    provenanceFooter:
+      "Recorded impact is real DesInventar data; the predicted side uses Praxis scoring (includes synthetic and assumption inputs). Narrative: {{generator}}; figures validated against source.",
+  },
 } as const;
 
 export default en;

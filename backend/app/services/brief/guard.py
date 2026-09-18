@@ -65,14 +65,23 @@ def extract_numbers(text: str) -> list[float]:
     return out
 
 
-def build_number_pool(facts: BriefFacts) -> set[float]:
-    """Every number that legitimately appears in the facts (the allow-set)."""
-    payload = json.dumps(facts.model_dump(mode="json"))
-    pool = set(extract_numbers(payload))
+def pool_from_payload(payload: object) -> set[float]:
+    """Every number appearing anywhere in a JSON-serialisable facts payload.
+
+    Generic allow-set builder reused by any facts-grounded generator (briefs,
+    after-action lessons): dump to JSON, extract every numeric token (fields and
+    numbers embedded in strings), and add the standard scale anchors.
+    """
+    pool = set(extract_numbers(json.dumps(payload)))
     return pool | set(_SCALE_ANCHORS)
 
 
-def _matches(candidate: float, pool: set[float]) -> bool:
+def build_number_pool(facts: BriefFacts) -> set[float]:
+    """Every number that legitimately appears in the facts (the allow-set)."""
+    return pool_from_payload(facts.model_dump(mode="json"))
+
+
+def number_matches(candidate: float, pool: set[float]) -> bool:
     """True when ``candidate`` equals a pool value within rounding tolerance.
 
     Tolerance is the larger of 0.5 (integer rounding of a one-decimal score) and
@@ -80,6 +89,20 @@ def _matches(candidate: float, pool: set[float]) -> bool:
     different number — a fabricated fact — falls outside this and is rejected.
     """
     return any(abs(candidate - allowed) <= max(0.5, abs(allowed) * 0.01) for allowed in pool)
+
+
+def offending_numbers(text: str, pool: set[float]) -> list[str]:
+    """The numeric tokens in ``text`` that are NOT traceable to the pool."""
+    bad: list[str] = []
+    for match in _NUMBER_RE.findall(text):
+        value = _to_float(match)
+        if value is not None and not number_matches(value, pool):
+            bad.append(match)
+    return bad
+
+
+# Backwards-compatible private alias (used by check_section below).
+_matches = number_matches
 
 
 def check_section(section: BriefSection, pool: set[float]) -> SectionGuard:

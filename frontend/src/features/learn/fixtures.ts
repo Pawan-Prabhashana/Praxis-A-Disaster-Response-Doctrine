@@ -1,0 +1,121 @@
+import type { AfterAction, DistrictComparison } from "@/lib/api";
+
+function dc(p: Partial<DistrictComparison> & { pcode: string; name: string }): DistrictComparison {
+  return {
+    at_risk_population: 0,
+    is_priority: true,
+    predicted_rank: 1,
+    deaths: 0,
+    affected: 0,
+    houses_destroyed: 0,
+    incident_count: 0,
+    has_data: true,
+    impact_score: 0,
+    impact_rank: 1,
+    rank_delta: 0,
+    under_prioritised: false,
+    is_blind_spot: false,
+    ...p,
+  };
+}
+
+/** An inverted-alignment after-action (the seed-shaped headline case). */
+export const AFTER_ACTION: AfterAction = {
+  id: 1,
+  scenario_slug: "2017-sw-monsoon-kalu-ganga",
+  playbook_id: 2,
+  brief_id: null,
+  stress_run_id: null,
+  event_year: 2017,
+  generator: "template",
+  model: null,
+  created_at: "2026-09-18T14:00:00Z",
+  result: {
+    version: 1,
+    scenario_slug: "2017-sw-monsoon-kalu-ganga",
+    playbook_name: "Wide coverage",
+    event_year: 2017,
+    districts: [
+      dc({
+        pcode: "LK91",
+        name: "Ratnapura",
+        at_risk_population: 83000,
+        predicted_rank: 5,
+        deaths: 84,
+        affected: 148041,
+        houses_destroyed: 222,
+        incident_count: 23,
+        impact_score: 72.9,
+        impact_rank: 2,
+        rank_delta: 3,
+        under_prioritised: true,
+      }),
+      dc({
+        pcode: "LK11",
+        name: "Colombo",
+        at_risk_population: 367562,
+        predicted_rank: 1,
+        deaths: 0,
+        affected: 26156,
+        houses_destroyed: 15,
+        incident_count: 9,
+        impact_score: 3.1,
+        impact_rank: 5,
+        rank_delta: -4,
+      }),
+      dc({
+        pcode: "LK72",
+        name: "Polonnaruwa",
+        at_risk_population: 5000,
+        predicted_rank: 6,
+        is_priority: false,
+        has_data: false,
+        impact_score: 0,
+        impact_rank: 6,
+      }),
+    ],
+    alignment: {
+      spearman: -0.5,
+      label: "inverted",
+      top_k: 3,
+      top_k_overlap: 2,
+      n_districts: 3,
+      n_with_data: 2,
+    },
+    blind_spots: [],
+    worst_under_prioritised: null,
+    totals: { deaths: 84, affected: 174197, houses_destroyed: 237, districts_with_data: 2 },
+    impact_weights: { deaths: 0.5, houses_destroyed: 0.3, affected: 0.2 },
+    predicted_uses_synthetic: true,
+    recorded_is_real: true,
+  },
+  lessons: {
+    version: 1,
+    assessment:
+      "This is a predicted-vs-recorded review comparing the Praxis at-risk ranking against the actual recorded 2017 impact — not the outcome of executing the plan.",
+    lessons: [
+      {
+        key: "alignment",
+        severity: "crit",
+        title: "Prediction alignment: inverted",
+        detail:
+          "The strategy's at-risk ranking correlates inverted with recorded impact (Spearman -0.5).",
+      },
+      {
+        key: "under_prioritised",
+        severity: "crit",
+        title: "Ratnapura was under-prioritised",
+        detail: "Ratnapura recorded impact rank #2 (84 deaths) but ranked #5 in predicted at-risk.",
+      },
+      {
+        key: "loop_closure",
+        severity: "info",
+        title: "For next time",
+        detail: "Weight recorded-impact history alongside flood-inundation at-risk.",
+      },
+    ],
+    generator: "template",
+    model: null,
+    guard: { ok: true, offending: [], from_template: true },
+  },
+};

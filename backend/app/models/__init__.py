@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from app.db.base import Base
 from app.models.admin_region import AdminRegion
+from app.models.after_action import AfterAction
 from app.models.brief import Brief
 from app.models.data_source import DataSource
 from app.models.hazard_layer import HazardLayer
@@ -23,6 +24,7 @@ from app.models.weather import WeatherReading
 __all__ = [
     "Base",
     "AdminRegion",
+    "AfterAction",
     "Brief",
     "DataSource",
     "DischargeForecast",

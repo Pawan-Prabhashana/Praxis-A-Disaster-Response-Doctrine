@@ -391,7 +391,61 @@ provenance badges, the synthetic-data caution, the epistemic framing, a
 
 Full trust model and judge-defense: [`BRIEF.md`](BRIEF.md).
 
-## 12. Phase roadmap (abridged)
+## 12. After-action pipeline — the Learn stage (Phase 7)
+
+Learn closes the Sense → Decide → Act → Learn loop by comparing a strategy's
+**predicted** at-risk ranking against the **actual recorded impact** of the real
+historical event. Its defining constraint is honest framing: **predicted vs.
+recorded**, where the recorded side is the DesInventar historical baseline, never
+the outcome of executing a playbook.
+
+```
+playbook + scenario
+      │  gather_scoring_inputs()                    recorded_outcomes()  (real incidents,
+      │    → predicted at-risk per district           parsed per district, event-year filtered)
+      ▼                                                     │
+build_after_action(predictions, outcomes)  ◄────────────────┘   (analysis.py — pure)
+      │   composite impact (normalised, weighted) · predicted vs recorded ranks
+      │   Spearman alignment + top-k overlap · under-prioritised · blind spots
+      ▼
+AfterActionResult ──► generate_lessons()   (template lessons always; assessment
+      │                 optionally LLM-narrated under the Phase-6 numeric guard)
+      ▼
+persist after_action (migration 0006: result + lessons snapshot)
+      ▼
+API: GET …/recorded-outcomes · POST …/playbooks/{id}/after-action · GET …/after-actions(/{id})
+```
+
+**Recorded outcomes are real.** Deaths / people affected / houses destroyed are
+aggregated from DesInventar `incident` rows (parsed from the fixed-format
+description) filtered to the scenario's event year; `is_synthetic = false`.
+Districts with no records report `has_data = false` ("no recorded data") — never a
+fabricated value.
+
+**Composite & alignment.** Each recorded component is min-max normalised across the
+district set, then weighted (deaths 0.5 / houses 0.3 / affected 0.2; raw components
+always shown). Predicted at-risk rank vs. recorded impact rank are compared by a
+tie-safe **Spearman** correlation (pure-Python) plus top-3 overlap, bucketed to
+plain language. On the seed 2017 data the rankings are **inverted** (ρ ≈ −0.5) — a
+real loop-closing lesson (Colombo predicted #1 recorded 0 deaths; Ratnapura
+predicted last recorded the most). Full metric definitions:
+[`AFTER_ACTION.md`](AFTER_ACTION.md).
+
+**Trust reuse.** The narrated assessment reuses the Phase-6 guard verbatim (a
+shared `pool_from_payload` / `offending_numbers` in `brief/guard.py`): real facts
+in, numbers validated against the analysis, template fallback, keyless-safe.
+
+**Frontend** (`features/learn/`): the `/learn` workspace picks a playbook, runs the
+review, and renders a recorded-impact choropleth (reusing the map pattern), a
+predicted-vs-recorded rank scatter (Recharts), the recorded-impact table with
+honesty flags, blind spots, and structured lessons — all under the
+predicted-vs-recorded framing.
+
+**Live-outcomes seam.** The analysis core takes plain `DistrictOutcome` records, so
+a future live event can swap the DesInventar gather for a live-response provider
+with no core change — intentional, not implemented.
+
+## 13. Phase roadmap (abridged)
 
 - **Phase 1.** Foundation: shell, design system, API skeleton, DB + PostGIS
   extension, local dev environment.
@@ -404,7 +458,10 @@ Full trust model and judge-defense: [`BRIEF.md`](BRIEF.md).
 - **Phase 5.** Stress-test engine: seeded Monte Carlo over documented parameter
   distributions, confidence bands + robustness, compare-under-uncertainty with
   reversal detection; honest epistemic framing + GloFAS-ensemble seam.
-- **Phase 6 (this work).** Act: AI-*structured* operational brief over a typed
-  facts boundary with a numeric-consistency guard (no fabricated figures), a
-  deterministic no-key fallback, and print-ready HTML/PDF export.
-- **Later.** After-action review (Learn/Phase 7), Sinhala/Tamil (Phase 8).
+- **Phase 6.** Act: AI-*structured* operational brief over a typed facts boundary
+  with a numeric-consistency guard (no fabricated figures), a deterministic no-key
+  fallback, and print-ready HTML/PDF export.
+- **Phase 7 (this work).** Learn: predicted-vs-recorded after-action review against
+  real DesInventar impact — composite impact, Spearman alignment, blind spots, and
+  guarded lessons; closes the Sense → Decide → Act → Learn loop.
+- **Later.** Sinhala/Tamil, offline, and deployment (Phase 8).

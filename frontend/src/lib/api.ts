@@ -502,6 +502,111 @@ export interface BriefRequest {
   stress_run_id?: number | null;
 }
 
+// --- After-action / Learn (Phase 7) -----------------------------------------
+export type LessonSeverity = "info" | "warn" | "crit";
+
+export interface DistrictOutcome {
+  pcode: string;
+  name: string;
+  deaths: number;
+  affected: number;
+  houses_destroyed: number;
+  incident_count: number;
+  has_data: boolean;
+}
+export interface DistrictComparison {
+  pcode: string;
+  name: string;
+  at_risk_population: number;
+  is_priority: boolean;
+  predicted_rank: number;
+  deaths: number;
+  affected: number;
+  houses_destroyed: number;
+  incident_count: number;
+  has_data: boolean;
+  impact_score: number;
+  impact_rank: number;
+  rank_delta: number;
+  under_prioritised: boolean;
+  is_blind_spot: boolean;
+}
+export interface AlignmentMeasure {
+  spearman: number;
+  label: "strong" | "moderate" | "weak" | "inverted";
+  top_k: number;
+  top_k_overlap: number;
+  n_districts: number;
+  n_with_data: number;
+}
+export interface Lesson {
+  key: string;
+  severity: LessonSeverity;
+  title: string;
+  detail: string;
+}
+export interface AfterActionResult {
+  version: number;
+  scenario_slug: string;
+  playbook_name: string;
+  event_year: number | null;
+  districts: DistrictComparison[];
+  alignment: AlignmentMeasure;
+  blind_spots: DistrictComparison[];
+  worst_under_prioritised: DistrictComparison | null;
+  totals: Record<string, number>;
+  impact_weights: Record<string, number>;
+  predicted_uses_synthetic: boolean;
+  recorded_is_real: boolean;
+}
+export interface AssessmentGuard {
+  ok: boolean;
+  offending: string[];
+  from_template: boolean;
+}
+export interface LessonsContent {
+  version: number;
+  assessment: string;
+  lessons: Lesson[];
+  generator: "llm" | "template";
+  model: string | null;
+  guard: AssessmentGuard;
+}
+export interface AfterAction {
+  id: number;
+  scenario_slug: string;
+  playbook_id: number;
+  brief_id: number | null;
+  stress_run_id: number | null;
+  event_year: number | null;
+  generator: "llm" | "template";
+  model: string | null;
+  created_at: string;
+  result: AfterActionResult;
+  lessons: LessonsContent;
+}
+export interface AfterActionListItem {
+  id: number;
+  playbook_id: number;
+  event_year: number | null;
+  generator: "llm" | "template";
+  alignment_label: string;
+  created_at: string;
+}
+export interface RecordedOutcomesResponse {
+  scenario_slug: string;
+  event_year: number | null;
+  source: string;
+  is_synthetic: boolean;
+  framing: string;
+  districts: DistrictOutcome[];
+  totals: Record<string, number>;
+}
+export interface AfterActionRequest {
+  brief_id?: number | null;
+  stress_run_id?: number | null;
+}
+
 function jsonInit(method: string, body: unknown): RequestInit {
   return {
     method,
@@ -579,6 +684,19 @@ export const api = {
     request<StressRun>(scenarioPath(slug, `/playbooks/${id}/stress-test`), jsonInit("POST", body)),
   listStressRuns: (slug: string, id: number): Promise<StressRun[]> =>
     request<StressRun[]>(scenarioPath(slug, `/playbooks/${id}/stress-runs`)),
+
+  // --- After-action (Learn) ---
+  recordedOutcomes: (slug: string): Promise<RecordedOutcomesResponse> =>
+    request<RecordedOutcomesResponse>(scenarioPath(slug, "/recorded-outcomes")),
+  createAfterAction: (slug: string, id: number, body: AfterActionRequest): Promise<AfterAction> =>
+    request<AfterAction>(
+      scenarioPath(slug, `/playbooks/${id}/after-action`),
+      jsonInit("POST", body),
+    ),
+  listAfterActions: (slug: string, id: number): Promise<AfterActionListItem[]> =>
+    request<AfterActionListItem[]>(scenarioPath(slug, `/playbooks/${id}/after-actions`)),
+  getAfterAction: (slug: string, id: number, aaId: number): Promise<AfterAction> =>
+    request<AfterAction>(scenarioPath(slug, `/playbooks/${id}/after-actions/${aaId}`)),
 
   // --- Operational brief (Act) ---
   createBrief: (slug: string, id: number, body: BriefRequest): Promise<Brief> =>
