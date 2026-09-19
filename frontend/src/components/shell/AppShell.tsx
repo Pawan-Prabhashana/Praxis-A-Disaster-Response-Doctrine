@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 
+import { OfflineBanner } from "@/components/shell/OfflineBanner";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { Topbar } from "@/components/shell/Topbar";
 import { applyTheme, useUiStore } from "@/store/ui";
@@ -19,6 +20,7 @@ export function AppShell() {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       <Topbar />
+      <OfflineBanner />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <main className="flex-1 overflow-y-auto">

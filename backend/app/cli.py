@@ -37,7 +37,7 @@ app.add_typer(ingest_app, name="ingest")
 console = Console()
 
 
-def _emit(title: str, result: dict[str, int]) -> None:
+def _emit(title: str, result: dict[str, object]) -> None:
     console.print(f"[bold green]✓[/] {title}")
     for key, value in result.items():
         console.print(f"    {key}: [cyan]{value}[/]")
@@ -110,6 +110,14 @@ def cmd_seed(force: bool = typer.Option(False, help="Re-download source files.")
     """Run the full seed-scenario data load end to end."""
     result = seed.seed_scenario(force=force)
     _emit("seed-scenario complete", result)
+
+
+@app.command("demo-seed")
+def cmd_demo_seed() -> None:
+    """Ensure the two showcase playbooks + fixed-seed stress runs exist (idempotent)."""
+    from app.services.demo.seed import seed_demo
+
+    _emit("demo-seed complete", seed_demo())
 
 
 @app.command("data-report")

@@ -1,3 +1,4 @@
+import { LanguageSwitcher } from "@/components/shell/LanguageSwitcher";
 import { Wordmark } from "@/components/shell/Logo";
 import { ScenarioSelector } from "@/components/shell/ScenarioSelector";
 import { SystemStatus } from "@/components/shell/SystemStatus";
@@ -22,6 +23,7 @@ export function Topbar() {
       <div className="ml-auto flex items-center gap-2">
         <SystemStatus />
         <Separator orientation="vertical" className="h-6" />
+        <LanguageSwitcher />
         <ThemeToggle />
       </div>
     </header>

@@ -1,0 +1,58 @@
+# Praxis — production stack: db + api + web.
+# Usage: `just prod-up` (or `docker compose -f docker-compose.prod.yml up -d --build`).
+# Config is env-driven; copy .env.prod.example to .env.prod and adjust. No secrets
+# are committed. See docs/DEPLOYMENT.md.
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: praxis-prod-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-praxis}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-praxis}
+      POSTGRES_DB: ${POSTGRES_DB:-praxis}
+    volumes:
+      - praxis-prod-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-praxis} -d ${POSTGRES_DB:-praxis}"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  api:
+    build:
+      context: ./backend
+    image: praxis-api:latest
+    container_name: praxis-prod-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Async URL points at the db service (internal port 5432).
+      PRAXIS_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-praxis}:${POSTGRES_PASSWORD:-praxis}@db:5432/${POSTGRES_DB:-praxis}
+      PRAXIS_ENVIRONMENT: production
+      # The web origin is same-origin via nginx; allow it explicitly too.
+      PRAXIS_CORS_ORIGINS: ${PRAXIS_CORS_ORIGINS:-http://localhost:8080}
+      # LLM narration is OFF by default; set these to enable (never commit a key).
+      PRAXIS_LLM_ENABLED: ${PRAXIS_LLM_ENABLED:-false}
+      PRAXIS_LLM_API_KEY: ${PRAXIS_LLM_API_KEY:-}
+      PRAXIS_LLM_MODEL: ${PRAXIS_LLM_MODEL:-claude-sonnet-5}
+    expose:
+      - "8000"
+
+  web:
+    build:
+      context: ./frontend
+    image: praxis-web:latest
+    container_name: praxis-prod-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+volumes:
+  praxis-prod-db-data:
+    name: praxis-prod-db-data

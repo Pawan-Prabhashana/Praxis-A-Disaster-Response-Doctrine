@@ -1,33 +1,42 @@
+import { WifiOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useHealth } from "@/hooks/useHealth";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { cn } from "@/lib/utils";
 
-type Tone = "ok" | "crit" | "pending";
+type Tone = "ok" | "crit" | "pending" | "offline";
 
 const TONE_DOT: Record<Tone, string> = {
   ok: "bg-signal-ok",
   crit: "bg-signal-crit",
   pending: "bg-muted-foreground",
+  offline: "bg-signal-warn",
 };
 
 /**
  * Live API + database status pill. Polls `/health` and reflects the real
  * backend state: online (API + DB healthy), degraded (API up, DB error), or
- * offline (unreachable). A tooltip exposes the detailed readout.
+ * offline (browser offline, or API unreachable). A tooltip exposes the detailed
+ * readout. When the browser is offline it says so explicitly — cached data is
+ * never presented as live.
  */
 export function SystemStatus() {
   const { t } = useTranslation();
+  const online = useOnlineStatus();
   const { data, isLoading, isError, dataUpdatedAt } = useHealth();
 
-  const apiOnline = !isError && !!data;
+  const apiOnline = online && !isError && !!data;
   const dbOk = data?.db === "ok";
 
   let tone: Tone = "pending";
   let label = t("status.checking");
-  if (!isLoading) {
+  if (!online) {
+    tone = "offline";
+    label = t("offline.label");
+  } else if (!isLoading) {
     if (apiOnline) {
       tone = dbOk ? "ok" : "crit";
       label = t("status.online");
@@ -48,16 +57,25 @@ export function SystemStatus() {
           className="flex items-center gap-2 rounded-md border border-border bg-surface-raised px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
           aria-label={label}
         >
-          <span className="relative flex h-2 w-2">
-            {tone === "ok" && (
-              <span className="absolute inline-flex h-full w-full animate-pulse-signal rounded-full bg-signal-ok/70" />
-            )}
-            <span className={cn("relative inline-flex h-2 w-2 rounded-full", TONE_DOT[tone])} />
-          </span>
+          {tone === "offline" ? (
+            <WifiOff className="h-3.5 w-3.5 text-signal-warn" />
+          ) : (
+            <span className="relative flex h-2 w-2">
+              {tone === "ok" && (
+                <span className="absolute inline-flex h-full w-full animate-pulse-signal rounded-full bg-signal-ok/70" />
+              )}
+              <span className={cn("relative inline-flex h-2 w-2 rounded-full", TONE_DOT[tone])} />
+            </span>
+          )}
           <span className="hidden sm:inline">{label}</span>
         </button>
       </TooltipTrigger>
       <TooltipContent align="end" className="w-56 p-0">
+        {!online && (
+          <p className="border-b border-border px-3 py-2 text-2xs text-signal-warn">
+            {t("offline.banner")}
+          </p>
+        )}
         <div className="px-3 py-2">
           <div className="flex items-center justify-between">
             <span className="font-medium">{t("app.name")} API</span>

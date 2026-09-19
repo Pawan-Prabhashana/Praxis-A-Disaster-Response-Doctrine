@@ -67,6 +67,19 @@ const en = {
     light: "Light",
     dark: "Dark",
   },
+  language: {
+    label: "Language",
+    en: "English",
+    si: "සිංහල",
+    ta: "தமிழ்",
+    dataNote: "Interface is translated; data (district names, sources) remains in English.",
+  },
+  offline: {
+    label: "Offline",
+    banner: "You are offline. Showing saved data — it may not be live.",
+    stale: "Cached data",
+    tilesNote: "Map tiles may not load while offline.",
+  },
   common: {
     close: "Close",
     retry: "Retry",
@@ -326,5 +339,16 @@ const en = {
       "Recorded impact is real DesInventar data; the predicted side uses Praxis scoring (includes synthetic and assumption inputs). Narrative: {{generator}}; figures validated against source.",
   },
 } as const;
+
+/**
+ * The message catalogue shape with `string` leaves (the `as const` literals of
+ * `en` relaxed to `string`). Other locales (`si`, `ta`) are typed as `Messages`
+ * so TypeScript enforces structural parity — every key present — while allowing
+ * different translated values.
+ */
+type Stringify<T> = {
+  [K in keyof T]: T[K] extends string ? string : Stringify<T[K]>;
+};
+export type Messages = Stringify<typeof en>;
 
 export default en;

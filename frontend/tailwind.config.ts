@@ -63,7 +63,16 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["Inter Variable", "Inter", "system-ui", "sans-serif"],
+        // Inter for Latin; self-hosted Noto Sans Sinhala/Tamil provide the
+        // glyphs Inter lacks so si/ta render cleanly (see main.tsx imports).
+        sans: [
+          "Inter Variable",
+          "Inter",
+          "Noto Sans Sinhala",
+          "Noto Sans Tamil",
+          "system-ui",
+          "sans-serif",
+        ],
         mono: ["JetBrains Mono Variable", "JetBrains Mono", "ui-monospace", "monospace"],
       },
       fontSize: {

@@ -445,7 +445,39 @@ predicted-vs-recorded framing.
 a future live event can swap the DesInventar gather for a live-response provider
 with no core change — intentional, not implemented.
 
-## 13. Phase roadmap (abridged)
+## 13. Localization, offline & deployment (Phase 8)
+
+**Localization.** i18next with `en` (default), `si`, `ta`. English is the single
+source of copy (`config/locales/en.ts`, typed `as const`); `si`/`ta` are typed
+`Messages` (a `Stringify<typeof en>`), which forces structural parity while
+allowing translated values. Missing keys fall back to English per-key, so the UI
+never shows a blank. The active language lives in the Zustand `ui` store
+(persisted), applied to i18next and `<html lang>` before first paint. Self-hosted
+`@fontsource` Noto Sans Sinhala/Tamil are added to the Tailwind `sans` stack so both
+scripts render offline. DB content stays English (labeled), not fake-translated.
+
+**Offline (PWA).** `vite-plugin-pwa` (Workbox) generates a service worker built for
+production only (`devOptions.enabled = false`), so dev and the jsdom test runner
+never register it. It precaches the app shell + code + fonts (`globPatterns`), and
+runtime-caches API GETs **NetworkFirst** (5s timeout → cache) and CARTO tiles
+**CacheFirst** (best-effort). A `useOnlineStatus` hook (via `navigator.onLine` +
+online/offline events) drives an offline pill state and a stale-data banner —
+cached data is never presented as live. No query-persistence dependency is needed;
+the SW's API cache covers reload-offline.
+
+**Deployment.** Two images: `backend/Dockerfile` (uv, multi-stage, non-root,
+healthcheck; entrypoint runs `alembic upgrade head` then uvicorn) and
+`frontend/Dockerfile` (Vite build → nginx serving static + proxying `/api` and
+`/health` to the api, so the app is same-origin with no CORS; the build sets an
+empty `VITE_API_BASE_URL` → relative requests). `docker-compose.prod.yml` (own
+project name `praxis-prod`) wires db + api + web with healthchecks; config is
+env-only via `.env.prod`. See [`DEPLOYMENT.md`](DEPLOYMENT.md).
+
+**Demo reproducibility.** `app/services/demo/seed.py` (CLI `demo-seed`) upserts the
+two showcase playbooks and a fixed-seed stress run each — idempotent — so the
+robustness reversal and the inverted-alignment insight reproduce on demand.
+
+## 14. Phase roadmap (abridged)
 
 - **Phase 1.** Foundation: shell, design system, API skeleton, DB + PostGIS
   extension, local dev environment.
@@ -461,7 +493,9 @@ with no core change — intentional, not implemented.
 - **Phase 6.** Act: AI-*structured* operational brief over a typed facts boundary
   with a numeric-consistency guard (no fabricated figures), a deterministic no-key
   fallback, and print-ready HTML/PDF export.
-- **Phase 7 (this work).** Learn: predicted-vs-recorded after-action review against
+- **Phase 7.** Learn: predicted-vs-recorded after-action review against
   real DesInventar impact — composite impact, Spearman alignment, blind spots, and
   guarded lessons; closes the Sense → Decide → Act → Learn loop.
-- **Later.** Sinhala/Tamil, offline, and deployment (Phase 8).
+- **Phase 8 (this work).** Localization (English/Sinhala/Tamil with self-hosted
+  Noto), offline PWA with an honest stale-data indicator, a production Docker
+  stack, and reproducible demo seeding.

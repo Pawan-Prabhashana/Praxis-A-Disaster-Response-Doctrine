@@ -82,6 +82,12 @@ data-load *args:
 data-report:
     cd {{backend}} && uv run python -m app.cli data-report
 
+# Reproducible demo: (re)create the two showcase playbooks + fixed-seed stress
+# runs so the robustness reversal and inverted-alignment insight always appear.
+# Idempotent; requires `just data-load` to have run first.
+demo-seed:
+    cd {{backend}} && uv run python -m app.cli demo-seed
+
 # --- Quality ----------------------------------------------------------------
 
 # Run backend + frontend test suites.
@@ -112,3 +118,34 @@ format:
 # Build the production frontend bundle.
 build:
     cd {{frontend}} && npm run build
+
+# --- Production (Docker) -----------------------------------------------------
+
+# A distinct project name keeps the prod stack isolated from the dev database.
+prod_compose := "docker compose -p praxis-prod -f docker-compose.prod.yml --env-file .env.prod"
+
+# Build the production images (api + web).
+prod-build:
+    {{prod_compose}} build
+
+# Bring up the full production stack (db + api + web) in the background.
+# The API applies migrations on start; open http://localhost:${WEB_PORT:-8080}.
+prod-up:
+    {{prod_compose}} up -d --build
+
+# Tail logs from the production stack.
+prod-logs:
+    {{prod_compose}} logs -f
+
+# Stop the production stack (data volume preserved).
+prod-down:
+    {{prod_compose}} down
+
+# Load the seed scenario INTO the production database (real public data; needs
+# network + the ETL extra). Runs the CLI in a throwaway api container.
+prod-data-load:
+    {{prod_compose}} run --rm --entrypoint "" api sh -c "uv sync --frozen --extra etl && uv run python -m app.cli seed-scenario"
+
+# Create the showcase playbooks in the production database (idempotent).
+prod-demo-seed:
+    {{prod_compose}} run --rm --entrypoint "" api python -m app.cli demo-seed

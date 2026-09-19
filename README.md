@@ -8,13 +8,33 @@ It turns fragmented operational signals into deliberate action through a single,
 continuous loop, and is built to feel like a calm, trustworthy command center
 because it is used under stress.
 
-> **Phase 7 — Learn: the after-action review.** The Sense → Decide → Act → Learn
-> loop is now complete. `/learn` compares a strategy's **predicted** at-risk ranking
-> against the **actual recorded impact** of the real 2017 event (DesInventar) — an
-> honest *predicted-vs-recorded* benchmark, never a claim the plan was executed. On
-> the seed data the rankings are **inverted** (Spearman ≈ −0.5): Colombo, ranked
-> most at-risk, recorded zero 2017 deaths, while Ratnapura, ranked last, recorded
-> the most — the loop-closing lesson. See [`docs/AFTER_ACTION.md`](docs/AFTER_ACTION.md).
+The full **Sense → Decide → Act → Learn** loop works end to end on **real public
+data** — with transparent deterministic scoring, a seeded Monte Carlo stress-test
+that surfaces a *robustness reversal*, an AI operational brief that **cannot
+fabricate a number**, and an after-action review that already found a real,
+actionable blind spot in flood-only planning. The interface is available in
+**English, Sinhala, and Tamil**, works **offline** as an installable app, and
+ships with a production Docker stack.
+
+> **The signature insight (real seed data).** Praxis's flood-exposure model ranks
+> **Colombo** the #1 at-risk district — yet Colombo recorded **zero deaths** in the
+> 2017 floods, while **Ratnapura**, ranked *last*, recorded the **most (84)** as a
+> landslide-prone hill district. The after-action makes this inversion (Spearman
+> ≈ −0.5) impossible to miss, and turns it into the next doctrine improvement:
+> weight recorded-impact history and landslide risk, not flood exposure alone.
+
+### What makes it trustworthy
+
+- **Honesty by construction.** Every number is tagged **real / sample /
+  assumption** in the UI, and those flags survive through scoring, the brief, and
+  the after-action. `just data-report` prints the full real-vs-synthetic ledger.
+- **No fabricated figures.** The AI brief and lessons narrate a typed facts object
+  and are checked by a **numeric-consistency guard**; any unverifiable number is
+  replaced by a deterministic template. Everything works with **no LLM key**.
+- **Honest uncertainty.** The stress-test models **epistemic** (parameter)
+  uncertainty for a historical event — never a fake forecast ensemble — and says so.
+- **Honest localization & offline.** UI chrome + all honesty labels are translated
+  (data stays English, labeled); offline shows cached data as cached, never as live.
 
 ## The response loop
 
@@ -45,7 +65,7 @@ Praxis is organised around four stages that form a closed doctrine loop:
 
 | Layer        | Choices                                                                                                   |
 | ------------ | --------------------------------------------------------------------------------------------------------- |
-| **Frontend** | React 18 + TypeScript (strict), Vite, Tailwind CSS + shadcn/ui (Radix), MapLibre GL, TanStack Query, Zustand, Recharts, Framer Motion, i18next, Vitest, Biome |
+| **Frontend** | React 18 + TypeScript (strict), Vite, Tailwind CSS + shadcn/ui (Radix), MapLibre GL, TanStack Query, Zustand, Recharts, Framer Motion, i18next (en/si/ta) + self-hosted Noto, PWA service worker (Workbox), Vitest, Biome |
 | **Backend**  | Python 3.12, FastAPI, Pydantic v2, Uvicorn, SQLAlchemy 2.0 (async) + GeoAlchemy2, Alembic, structlog, uv, Ruff, Pytest |
 | **Data**     | PostgreSQL 16 + PostGIS 3.4 (Docker Compose)                                                               |
 | **Tooling**  | `just` command runner, `uv` for Python, Docker Compose for infra                                          |
@@ -264,16 +284,52 @@ susceptibility, not flood-inundation exposure alone.
 Open http://localhost:5173/learn, pick a playbook, and **Run after-action**. Full
 model: [`docs/AFTER_ACTION.md`](docs/AFTER_ACTION.md).
 
+## Languages, offline & deployment (Phase 8)
+
+- **Trilingual.** English (default), **Sinhala**, and **Tamil** — switch in the top
+  bar. The core operational surface and **every honesty/provenance/epistemic label**
+  are translated; self-hosted Noto Sans Sinhala/Tamil render both scripts (offline
+  too). Untranslated long-form falls back to English per-key. Database content
+  (district names, sources) stays English and is labeled as such.
+- **Offline / low-bandwidth.** Praxis is an installable PWA: a service worker
+  precaches the app shell, code, and fonts, and serves API GETs network-first with a
+  cache fallback, so a loaded dashboard survives a dropped connection. A clear
+  **offline indicator** and stale-data banner appear — cached data is never shown as
+  live. The `/act` brief works offline (template). *Honest limit:* third-party CARTO
+  basemap tiles aren't guaranteed cacheable, so the map may render without tiles.
+- **Deployment.** A production Docker stack (db + api + web via nginx) boots with
+  `just prod-up`; the api applies migrations on start. Full steps — clone → running
+  stack → seed load → enabling the LLM — in [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+- **Demo.** `just demo-seed` reproducibly recreates the two showcase playbooks +
+  fixed-seed stress runs so the robustness reversal and inverted-alignment insight
+  appear on demand. Walkthrough: [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md).
+
+## Documentation
+
+| Doc | What it covers |
+| --- | -------------- |
+| [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System shape, stack rationale, and every pipeline. |
+| [`DATA_SOURCES.md`](docs/DATA_SOURCES.md) | The real public sources and the real-vs-synthetic ledger. |
+| [`SCORING.md`](docs/SCORING.md) | The deterministic scorecard — formulas, inputs, flags. |
+| [`UNCERTAINTY.md`](docs/UNCERTAINTY.md) | The stress-test engine and epistemic-uncertainty framing. |
+| [`BRIEF.md`](docs/BRIEF.md) | The operational brief's facts→guard→render trust model. |
+| [`AFTER_ACTION.md`](docs/AFTER_ACTION.md) | Predicted-vs-recorded after-action, composite impact, alignment. |
+| [`DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Production Docker stack, seed load, enabling the LLM. |
+| [`DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) | The 5-minute demo walkthrough. |
+| [`JUDGE_QA.md`](docs/JUDGE_QA.md) | Crisp answers to the predictable hard questions. |
+
 ## Repository layout
 
 ```
 Praxis/
-├── backend/        FastAPI service (app/, migrations/, tests/)
-├── frontend/       React app (src/app, routes, components/ui, lib, styles)
-├── docs/           Architecture and design docs
-├── docker-compose.yml
+├── backend/        FastAPI service (app/, migrations/, tests/) + Dockerfile
+├── frontend/       React app (src/app, routes, components/ui, lib, styles) + Dockerfile + nginx.conf
+├── docs/           Architecture, design, deployment, demo, and judge-Q&A docs
+├── docker-compose.yml        # dev database
+├── docker-compose.prod.yml   # production db + api + web
 ├── justfile
-└── .env.example
+├── .env.example
+└── .env.prod.example
 ```
 
 ## License
